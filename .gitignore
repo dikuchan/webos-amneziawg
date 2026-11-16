@@ -1,29 +1,18 @@
-dist/
-*.ipk
-*.tar.gz
-*.tar.xz
-*.o
-*.d
-*.a
+/.local/
+/.build/
+/node_modules/
+/test-bin/
+/dist/
+/kit/bin/
+/kit/licenses/
+/kit/README.md
+/app/*/payload/
+/app/*/licenses/
+/app/*/README.md
+/app/*/app.js
+/app/*/i18n.js
+/tests/i18n-check/
+/tests/ui-preview/
 .DS_Store
-
-# Local test/build artifacts
-wgtest/
-*.log
-*.pid
-
-# Local generated assets/backups
-app/com.github.cfernande1470.wireguard/icon-original-*.png
-
-# Do not commit real VPN configs
-wg0.conf
 *.conf
-
-# Allow safe example configs
-!examples/
-!examples/*.example.conf
-
-# Local build outputs
-uploader/wg-upload
-wireguard-go/wireguard-go
-wireguard-tools/src/wg
+!third_party/**/*.conf

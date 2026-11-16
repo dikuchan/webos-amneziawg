@@ -1,0 +1,91 @@
+type UILanguage = "en" | "ru";
+
+const englishMessages = {
+    checking: "Checking…", unknown: "Status unavailable", disconnected: "Disconnected",
+    connecting: "Connecting…", disconnecting: "Disconnecting…", connected: "Connected",
+    recoveryNeeded: "Network recovery needed", connect: "Connect", disconnect: "Disconnect",
+    checkVPN: "Check VPN status", recoverNetwork: "Restore network", controls: "VPN controls",
+    traffic: "VPN traffic", received: "Downloaded", sent: "Uploaded", configuration: "Configuration", logs: "Logs",
+    settings: "Settings", back: "Back", import: "Import", importAction: "Import configuration",
+    refresh: "Refresh", refreshLogs: "Refresh logs", loading: "Loading…", logsEmpty: "No logs yet",
+    lastError: "Last error", startup: "Connect on device startup", language: "Language",
+    uploadOpen: "Open upload", uploadAddress: "Open this address on a device on the same network", uploadCode: "Code", uploadWaiting: "Waiting for a .conf file…",
+    uploadEnded: "Upload session ended", uploadLocked: "Too many incorrect codes", uploadFailed: "Could not open upload",
+    uploadCloseFailed: "Could not close upload", uploadCheckFailed: "Could not check upload",
+    ruDirect: "Russian services directly", routingFailed: "Could not change routing", routingUpdateFailed: "Could not update the list",
+    routingUpdating: "Updating…", routingCached: "Saved list", routingSubnets: "subnets", routingRefresh: "Update subnet list", routingReadDetail: "Could not read routing settings.",
+    importCheck: "Check VPN status first",
+    importDisconnect: "Disconnect the VPN before importing", imported: "Configuration imported",
+    wgActive: "Disconnect WireGuard first", wgAutostart: "Disable WireGuard autostart first",
+    importFileMissing: ".conf file not found", configurationMissing: "Import a configuration first",
+    serverNoResponse: "The server did not respond", serviceUnavailable: "Homebrew Channel is unavailable",
+    importFailed: "Could not import the configuration", connectFailed: "Could not connect",
+    disconnectFailed: "Could not disconnect", statusFailed: "Could not check VPN status",
+    logsFailed: "Could not read the logs", autostartFailed: "Could not change autoconnect",
+    languageSaveFailed: "Could not save the language preference",
+    serviceDetail: "Homebrew Channel is unavailable. Check root access.",
+    tvOnlyDetail: "Homebrew Channel is unavailable. Open this app on the TV.",
+    incompleteDetail: "The TV returned an incomplete response. Check VPN status.",
+    timeoutDetail: "The TV did not respond. Check VPN status.",
+    releaseDetail: "Could not close the Homebrew Channel request. Check VPN status.",
+    unreadableDetail: "Could not read the Homebrew Channel response.",
+    missingStateDetail: "The TV response does not include VPN status.",
+    autostartReadDetail: "Could not read the autoconnect setting."
+} as const;
+type MessageKey = keyof typeof englishMessages;
+type MessageCatalog = { readonly [key in MessageKey]: string };
+
+const uiMessages: { readonly [language in UILanguage]: MessageCatalog } = {
+    en: englishMessages,
+    ru: {
+        checking: "Проверка…", unknown: "Статус неизвестен", disconnected: "Отключено",
+        connecting: "Подключение…", disconnecting: "Отключение…", connected: "Подключено",
+        recoveryNeeded: "Нужно восстановить сеть", connect: "Подключить", disconnect: "Отключить",
+        checkVPN: "Проверить состояние VPN", recoverNetwork: "Восстановить сеть", controls: "Управление VPN",
+        traffic: "Трафик VPN", received: "Получено", sent: "Отправлено", configuration: "Конфигурация", logs: "Логи",
+        settings: "Настройки", back: "Назад", import: "Импорт", importAction: "Импортировать конфигурацию",
+        refresh: "Обновить", refreshLogs: "Обновить логи", loading: "Загрузка…", logsEmpty: "Логов пока нет",
+        lastError: "Последняя ошибка", startup: "Подключаться при запуске устройства", language: "Язык",
+        uploadOpen: "Открыть загрузку", uploadAddress: "Открой адрес на устройстве в той же сети", uploadCode: "Код", uploadWaiting: "Ожидание файла .conf…",
+        uploadEnded: "Загрузка завершена", uploadLocked: "Слишком много неверных кодов", uploadFailed: "Не удалось открыть загрузку",
+        uploadCloseFailed: "Не удалось закрыть загрузку", uploadCheckFailed: "Не удалось проверить загрузку",
+        ruDirect: "Российские сервисы напрямую", routingFailed: "Не удалось изменить маршрутизацию", routingUpdateFailed: "Не удалось обновить список",
+        routingUpdating: "Обновление…", routingCached: "Сохранённый список", routingSubnets: "подсетей", routingRefresh: "Обновить список подсетей", routingReadDetail: "Не удалось получить настройки маршрутизации.",
+        importCheck: "Сначала проверь состояние VPN",
+        importDisconnect: "Отключи VPN перед импортом", imported: "Конфигурация загружена",
+        wgActive: "Сначала отключи обычный WireGuard", wgAutostart: "Отключи автозапуск обычного WireGuard",
+        importFileMissing: "Файл .conf не найден", configurationMissing: "Сначала загрузи конфигурацию",
+        serverNoResponse: "Сервер не ответил", serviceUnavailable: "Homebrew Channel недоступен",
+        importFailed: "Не удалось импортировать конфигурацию", connectFailed: "Не удалось подключиться",
+        disconnectFailed: "Не удалось отключить VPN", statusFailed: "Не удалось проверить состояние VPN",
+        logsFailed: "Не удалось прочитать логи", autostartFailed: "Не удалось изменить автоподключение",
+        languageSaveFailed: "Не удалось сохранить выбранный язык",
+        serviceDetail: "Homebrew Channel недоступен. Проверь root-доступ.",
+        tvOnlyDetail: "Homebrew Channel недоступен. Открой приложение на телевизоре.",
+        incompleteDetail: "Телевизор вернул неполный ответ. Проверь состояние VPN.",
+        timeoutDetail: "Телевизор не ответил. Проверь состояние VPN.",
+        releaseDetail: "Не удалось закрыть запрос Homebrew Channel. Проверь состояние VPN.",
+        unreadableDetail: "Не удалось прочитать ответ Homebrew Channel.",
+        missingStateDetail: "В ответе телевизора нет состояния VPN.",
+        autostartReadDetail: "Не удалось получить настройку автоподключения."
+    }
+};
+
+function resolveUILanguage(saved: string | null, systemLocale: string): UILanguage {
+    if (saved === "ru" || saved === "en") return saved;
+    return /^ru(?:[-_][a-z0-9]{2,8})*$/i.test(systemLocale) ? "ru" : "en";
+}
+
+function formatTraffic(value: number | null, language: UILanguage): string {
+    if (value === null) return "—";
+    const units = language === "ru" ? ["Б", "КБ", "МБ", "ГБ", "ТБ", "ПБ"] : ["B", "KB", "MB", "GB", "TB", "PB"];
+    let amount = value;
+    let unit = 0;
+    while (amount >= 1024 && unit < units.length - 1) { amount /= 1024; unit++; }
+    const formatter = new Intl.NumberFormat(language === "ru" ? "ru-RU" : "en-US", {
+        minimumFractionDigits: unit === 0 ? 0 : 1,
+        maximumFractionDigits: unit === 0 ? 0 : 1,
+        useGrouping: false
+    });
+    return formatter.format(amount) + " " + units[unit];
+}

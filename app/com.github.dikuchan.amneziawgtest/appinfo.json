@@ -1,0 +1,13 @@
+{
+  "id": "com.github.dikuchan.amneziawgtest",
+  "version": "0.3.1",
+  "vendor": "dikuchan",
+  "type": "web",
+  "main": "index.html",
+  "title": "AmneziaWG",
+  "icon": "icon.png",
+  "largeIcon": "largeIcon.png",
+  "resolution": "1920x1080",
+  "requiredACG": [],
+  "disableBackHistoryAPI": true
+}

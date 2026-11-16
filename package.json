@@ -1,0 +1,12 @@
+{
+  "name": "webos-amneziawg",
+  "version": "0.3.1",
+  "private": true,
+  "scripts": {
+    "build:ui": "tsc -p tsconfig.json"
+  },
+  "devDependencies": {
+    "typescript": "7.0.2",
+    "@webos-tools/cli": "3.2.6"
+  }
+}

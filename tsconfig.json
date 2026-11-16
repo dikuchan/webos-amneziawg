@@ -1,0 +1,23 @@
+{
+  "compilerOptions": {
+    "target": "ES2017",
+    "module": "es2015",
+    "lib": [
+      "ES2017",
+      "DOM"
+    ],
+    "strict": true,
+    "noUncheckedIndexedAccess": true,
+    "exactOptionalPropertyTypes": true,
+    "noUnusedLocals": true,
+    "noUnusedParameters": true,
+    "noFallthroughCasesInSwitch": true,
+    "rootDir": "web",
+    "outDir": "app/com.github.dikuchan.amneziawgtest",
+    "noEmitOnError": true
+  },
+  "files": [
+    "web/i18n.ts",
+    "web/app.ts"
+  ]
+}

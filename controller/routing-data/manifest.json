@@ -1,0 +1,13 @@
+{
+  "schema": 1,
+  "generatedAt": "2026-11-16T10:32:15.659Z",
+  "ipv4": 635,
+  "file": {
+    "name": "ru-standard.ipv4.txt",
+    "format": "ipv4",
+    "group": "text",
+    "size": 10391,
+    "sha256": "7cd5b10c5b871beef7eb79b530f672fa6fc01aa24b6528cd2499218dd3127441"
+  },
+  "revision": "7e14508232595bac5881aa25d31202843a3f6021"
+}
