@@ -1,7 +1,9 @@
 #!/bin/sh
 set -eu
+umask 077
 
 BASE="/var/lib/webosbrew/wireguard"
+HERE="$(CDPATH='' cd -- "$(dirname -- "$0")" && pwd)"
 IFACE="wg0"
 
 PIDFILE="$BASE/run/wireguard-go.pid"
@@ -31,8 +33,21 @@ acquire_operation_lock() {
   echo "$$" > "$OPERATION_LOCK/pid"
 }
 
-acquire_operation_lock
-trap 'rc=$?; rm -rf "$OPERATION_LOCK"; exit "$rc"' EXIT HUP INT TERM
+if [ "$#" -eq 0 ]; then
+  acquire_operation_lock
+  trap 'rc=$?; rm -rf "$OPERATION_LOCK"; exit "$rc"' EXIT
+  trap 'exit 1' HUP INT TERM
+elif [ "$#" -eq 2 ] && [ "$1" = --lock-owner ] && [ -n "$2" ] && \
+     [ "$2" = "$(cat "$OPERATION_LOCK/pid" 2>/dev/null)" ]; then
+  # start.sh owns this lock and releases it after failed-start cleanup.
+  :
+else
+  echo "ERROR: invalid stop operation lock owner" >&2
+  exit 1
+fi
+
+echo "== restoring DNS =="
+"$HERE/dns.sh" restore
 
 echo "== deleting applied WireGuard routes =="
 if [ -f "$APPLIED_ROUTES_FILE" ]; then

@@ -43,7 +43,7 @@ done
 
 echo
 echo "== checking scripts =="
-for f in start.sh stop.sh status.sh upload-start.sh upload-stop.sh autostart.sh boot.sh uninstall.sh; do
+for f in dns.sh start.sh stop.sh status.sh upload-start.sh upload-stop.sh autostart.sh boot.sh uninstall.sh; do
   if [ ! -x "$SRC/scripts/$f" ]; then
     echo "ERROR: missing executable $SRC/scripts/$f"
     exit 1
@@ -61,7 +61,7 @@ fi
 echo
 echo "== stopping old runtime before migrating =="
 if [ -x "$DST/scripts/stop.sh" ]; then
-  sh "$DST/scripts/stop.sh" 2>&1 || true
+  sh "$DST/scripts/stop.sh" 2>&1
 fi
 
 killall wireguard-go 2>/dev/null || true

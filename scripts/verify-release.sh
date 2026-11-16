@@ -30,6 +30,7 @@ for script in "$APP/payload/wireguard/install.sh" "$APP/payload/wireguard/script
   sh -n "$script"
 done
 
+test -x "$APP/payload/wireguard/scripts/dns.sh"
 test -x "$APP/payload/wireguard/scripts/boot.sh"
 test -x "$APP/payload/wireguard/scripts/exec-clean.sh"
 
@@ -50,6 +51,7 @@ if ar tv "$IPK" | grep -q ' 1970 '; then
 fi
 
 ar p "$IPK" data.tar.gz | tar tzf - | grep -q "^usr/palm/applications/$APP_ID/appinfo.json$"
+ar p "$IPK" data.tar.gz | tar tzf - | grep -q "^usr/palm/applications/$APP_ID/payload/wireguard/scripts/dns.sh$"
 ar p "$IPK" data.tar.gz | tar tzf - | grep -q "^usr/palm/applications/$APP_ID/payload/wireguard/scripts/boot.sh$"
 ar p "$IPK" data.tar.gz | tar tzf - | grep -q "^usr/palm/applications/$APP_ID/payload/wireguard/scripts/exec-clean.sh$"
 ar p "$IPK" data.tar.gz | tar tzf - | grep -q "^usr/palm/packages/$APP_ID/packageinfo.json$"

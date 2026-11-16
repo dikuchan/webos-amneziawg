@@ -27,6 +27,7 @@ The app is designed for rooted TVs with Homebrew Channel installed.
 - Start, stop, status, routes, config and log actions
 - Optional autostart on boot
 - Runtime uninstall action
+- Experimental, reversible IPv4 DNS settings from provider configs
 
 ---
 
@@ -84,9 +85,9 @@ To package manually:
 make package
 ```
 
-Packaging requires `ares-package` from either LG's `@webos-tools/cli` or
-webOSBrew's `ares-cli-rs`. Set `ARES_PACKAGE=/path/to/ares-package` when it is
-not available on `PATH`. The package is forced to architecture `all` because
+Packaging requires `ares-package` from [webOSBrew's `ares-cli-rs`](https://github.com/webosbrew/ares-cli-rs).
+The script uses `--force-arch all`, which LG's `@webos-tools/cli` does not support.
+Set `ARES_PACKAGE=/path/to/ares-package` when it is not available on `PATH`. The package is forced to architecture `all` because
 the bundled ARMv7 binaries run on both 32-bit and 64-bit TVs.
 
 Output:
@@ -163,7 +164,7 @@ PersistentKeepalive = 25
 
 ## Configuration handling
 
-The uploader accepts normal `wg-quick` style configuration files and converts them for `wg setconf`.
+The uploader accepts normal `wg-quick` style configuration files. It preserves supported DNS settings in `wg0.conf`; the start script removes these before calling `wg setconf`.
 
 Handled fields:
 
@@ -177,12 +178,12 @@ AllowedIPs
 Endpoint
 PersistentKeepalive
 Address
+DNS
 ```
 
 Ignored fields:
 
 ```text
-DNS
 MTU
 Table
 SaveConfig
@@ -210,7 +211,30 @@ A backup of every uploaded config is stored in:
 /var/lib/webosbrew/wireguard/uploads
 ```
 
-DNS handling is not implemented in version `1.0.2`.
+This fork supports `DNS = 10.10.10.1, 1.1.1.1` in `[Interface]` (one to three
+unicast IPv4 addresses). IPv6 DNS, search domains and split DNS are not supported;
+unsupported values are rejected instead of being silently discarded.
+
+After the tunnel routes are installed, each DNS server must resolve to `dev wg0`
+according to `ip route get`. The peer must also allow that address in `AllowedIPs`.
+A LAN or endpoint route taking precedence causes startup to fail before the
+resolver is changed. No DNS-specific routes are added or existing routes replaced.
+
+The runtime bind-mounts a generated, read-only resolver file over the resolved
+`/etc/resolv.conf` target. It does not edit the original file, restart ConnMan, or
+change persistent network/DHCP settings. Stop, failed startup, profile replacement
+and runtime uninstall remove the mount. A failed restore keeps recovery state and
+prevents uninstall/update; retry **Stop VPN** before removing the app. A reboot
+removes the mount; autostart reapplies DNS from the config.
+
+Configs without `DNS` keep the original resolver. If an earlier app version
+stripped DNS during upload, upload the original provider config again.
+
+This implementation is experimental and has not been verified on a physical TV.
+It covers clients using this resolver file in the same mount namespace. Services
+with another resolver path, cached DNS settings, or their own DoH/DoT may behave
+differently. Verify native apps on the target firmware; this is not a system-wide
+DNS leak-prevention guarantee.
 
 Uploaded `MTU` values are ignored by the uploader. The start script uses a default tunnel MTU of `1420`.
 
@@ -361,13 +385,14 @@ wg show wg0
 
 ### Uploaded config works but DNS does not change
 
-DNS handling is not implemented in version `1.0.2`.
+Re-upload the original config if it was imported with an older version. Check
+that it has IPv4 `DNS` entries in `[Interface]`, then stop and start the VPN.
+The start log must contain `VPN DNS resolver applied`.
 
-Use IP-based tests first, for example:
-
-```sh
-curl -4 http://ifconfig.me/ip
-```
+On the TV, compare `cat /etc/resolv.conf` with the provider DNS addresses and run
+`ip route get <dns-ip>` (it must use `wg0`). Check both name lookup and playback
+in the native apps you use. An app may keep old answers until restarted.
+If Stop reports a DNS restore error, retry it before uninstalling the app.
 
 ---
 
@@ -402,6 +427,7 @@ app/com.github.cfernande1470.wireguard/
       wireguard-go
       wg-upload
     scripts/
+      dns.sh
       start.sh
       stop.sh
       status.sh
@@ -423,7 +449,29 @@ wireguard-tools/
 
 ---
 
+## Tests
+
+Run `make test` with Go and Docker available. Import tests exercise persisted
+config output and rejected DNS values. Linux integration tests use real bind
+mounts in a disposable container without network access; only TV network commands
+are substituted. They cover start/stop, reconnect, a profile without DNS, failure
+rollback and retaining recovery state when uninstall cannot restore DNS.
+
+The suite also runs the existing descriptor-launch regression test. Tests use
+synthetic keys, endpoints and DNS settings; no provider credentials are needed.
+
+Before enabling autostart on a TV, verify a normal WG handshake and traffic,
+provider DNS and native-app playback, Stop restoring the original resolver,
+reconnect with a hostname endpoint, and recovery after standby/reboot. Do not
+publish provider configs, private keys or unredacted configuration output.
+
 ## Changelog
+
+### Unreleased: experimental DNS support
+
+- Preserve and validate IPv4 DNS from uploaded configs.
+- Apply a reversible resolver override after routes are ready and restore it on stop or startup failure.
+- Keep recovery state if DNS cannot be restored; block runtime removal/update in that case.
 
 ### 1.0.8
 
@@ -595,10 +643,11 @@ Para empaquetar manualmente:
 make package
 ```
 
-El empaquetado requiere `ares-package`, incluido tanto en `@webos-tools/cli`
-de LG como en `ares-cli-rs` de webOSBrew. Si no está disponible en `PATH`, usa
-`ARES_PACKAGE=/ruta/a/ares-package`. El paquete fuerza la arquitectura `all`
-porque los binarios ARMv7 incluidos funcionan en televisores de 32 y 64 bits.
+El empaquetado requiere `ares-package` de [webOSBrew `ares-cli-rs`](https://github.com/webosbrew/ares-cli-rs).
+El script usa `--force-arch all`, que `@webos-tools/cli` de LG no admite.
+Si no está disponible en `PATH`, usa `ARES_PACKAGE=/ruta/a/ares-package`.
+Se fuerza la arquitectura `all` porque los binarios ARMv7 incluidos funcionan
+en televisores de 32 y 64 bits.
 
 Resultado:
 
@@ -674,7 +723,7 @@ PersistentKeepalive = 25
 
 ## Gestión de la configuración
 
-El uploader acepta configuraciones normales de tipo `wg-quick` y las convierte para `wg setconf`.
+El uploader acepta configuraciones normales de tipo `wg-quick`. Conserva el DNS compatible en `wg0.conf`; el script de arranque lo elimina antes de llamar a `wg setconf`.
 
 Campos gestionados:
 
@@ -688,12 +737,12 @@ AllowedIPs
 Endpoint
 PersistentKeepalive
 Address
+DNS
 ```
 
 Campos ignorados:
 
 ```text
-DNS
 MTU
 Table
 SaveConfig
@@ -721,7 +770,29 @@ Cada configuración subida se copia como backup en:
 /var/lib/webosbrew/wireguard/uploads
 ```
 
-La gestión de DNS no está implementada en la versión `1.0.2`.
+Este fork admite `DNS = 10.10.10.1, 1.1.1.1` en `[Interface]` (de una a tres
+IPv4 unicast). Se rechazan DNS IPv6, dominios de búsqueda y más de tres servidores.
+No hay soporte de DNS dividido.
+
+Después de instalar las rutas, `ip route get` debe dirigir cada DNS por `wg0`.
+El peer también debe incluir esa dirección en `AllowedIPs`. Una ruta LAN o de
+endpoint que tenga prioridad provoca un error antes de cambiar el resolver.
+No se añaden rutas especiales para DNS ni se sustituyen las existentes.
+
+El runtime monta un archivo de resolver de solo lectura sobre el destino real de
+`/etc/resolv.conf`, sin editar el original, reiniciar ConnMan ni cambiar DHCP.
+Al parar, fallar el arranque, cambiar de perfil o desinstalar el runtime se retira
+el montaje. Si falla la restauración, se conserva el estado y se impide
+actualizar/desinstalar: vuelve a pulsar **Parar VPN** antes de eliminar la app.
+El montaje desaparece al reiniciar; el inicio automático vuelve a aplicarlo.
+Sin `DNS` se mantiene el resolver original. Vuelve a subir el archivo original
+si una versión anterior había descartado su DNS.
+
+Implementación experimental, aún sin verificar en una TV física. Cubre clientes
+que usan este archivo en el mismo espacio de montajes. Servicios con otra ruta de
+resolución, cachés o DoH/DoT propio pueden comportarse de forma distinta.
+Hay que probar las apps nativas en el firmware de destino; no garantiza evitar
+todas las fugas DNS.
 
 Los valores `MTU` subidos se ignoran en el uploader. El script de arranque usa una MTU de túnel por defecto de `1420`.
 
@@ -872,13 +943,14 @@ wg show wg0
 
 ### La configuración sube bien pero DNS no cambia
 
-La gestión de DNS no está implementada en la versión `1.0.2`.
+Vuelve a subir el archivo original si se importó con una versión anterior.
+Comprueba las entradas IPv4 `DNS` en `[Interface]` y para/arranca la VPN.
+El log debe mostrar `VPN DNS resolver applied`.
 
-Prueba primero con IP pública:
-
-```sh
-curl -4 http://ifconfig.me/ip
-```
+Compara `cat /etc/resolv.conf` con el DNS del proveedor y ejecuta
+`ip route get <dns-ip>` (debe usar `wg0`). Prueba resolución y reproducción en las
+apps nativas; reinícialas si conservan respuestas antiguas. Si falla la
+restauración de DNS, vuelve a parar la VPN antes de eliminar la app.
 
 ---
 
@@ -914,6 +986,7 @@ app/com.github.cfernande1470.wireguard/
       wireguard-go
       wg-upload
     scripts/
+      dns.sh
       start.sh
       stop.sh
       status.sh
@@ -935,7 +1008,25 @@ wireguard-tools/
 
 ---
 
+## Pruebas
+
+Ejecuta `make test` con Go y Docker disponibles. Se comprueban la importación,
+los montajes reales de Linux y su restauración, reconexión, errores de arranque y
+la conservación del estado si no se puede restaurar DNS. El contenedor no tiene
+acceso a la red y usa datos sintéticos. También se ejecuta la prueba de
+lanzamiento sin descriptores heredados.
+
+Antes de activar el inicio automático, prueba en la TV el handshake, DNS y apps
+nativas, la restauración al parar, reconexión con un endpoint por nombre y
+recuperación después de standby/reinicio.
+
 ## Registro de cambios
+
+### Sin publicar: DNS experimental
+
+- Conserva y valida DNS IPv4 de los archivos subidos.
+- Aplica un resolver reversible y lo restaura al parar o fallar el arranque.
+- Impide eliminar/actualizar el runtime si no se ha podido restaurar DNS.
 
 ### 1.0.8
 

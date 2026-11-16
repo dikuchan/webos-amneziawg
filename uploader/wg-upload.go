@@ -11,6 +11,7 @@ import (
 	"io"
 	"log"
 	"net/http"
+	"net/netip"
 	"os"
 	"path/filepath"
 	"strconv"
@@ -786,6 +787,8 @@ const errorHTML = `<!doctype html>
 func convertConfig(input string) (string, string, error) {
 	var out []string
 	var address string
+	var section string
+	dnsCount := 0
 
 	allowed := map[string]bool{
 		"PrivateKey":          true,
@@ -812,6 +815,7 @@ func convertConfig(input string) (string, string, error) {
 		}
 
 		if strings.HasPrefix(line, "[") && strings.HasSuffix(line, "]") {
+			section = strings.ToLower(line)
 			out = append(out, "", line)
 			continue
 		}
@@ -830,7 +834,29 @@ func convertConfig(input string) (string, string, error) {
 				address = firstIPv4OrFirst(val)
 			}
 			continue
-		case "DNS", "MTU", "Table", "SaveConfig", "PostUp", "PostDown", "PreUp", "PreDown":
+		case "DNS":
+			if section != "[interface]" {
+				return "", "", fmt.Errorf("DNS is only supported in [Interface]")
+			}
+			values := strings.Split(strings.SplitN(val, "#", 2)[0], ",")
+			for i, value := range values {
+				ip, err := netip.ParseAddr(strings.TrimSpace(value))
+				if err != nil || !ip.Is4() || !ip.IsGlobalUnicast() {
+					return "", "", fmt.Errorf("DNS requires unicast IPv4 addresses; IPv6 and search domains are not supported")
+				}
+				octets := ip.As4()
+				if octets[0] == 0 || octets[0] >= 224 {
+					return "", "", fmt.Errorf("DNS requires unicast IPv4 addresses")
+				}
+				values[i] = ip.String()
+			}
+			dnsCount += len(values)
+			if dnsCount > 3 {
+				return "", "", fmt.Errorf("DNS supports at most three servers")
+			}
+			out = append(out, "DNS = "+strings.Join(values, ", "))
+			continue
+		case "MTU", "Table", "SaveConfig", "PostUp", "PostDown", "PreUp", "PreDown":
 			continue
 		}
 

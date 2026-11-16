@@ -1,8 +1,9 @@
 #!/bin/sh
 set -eu
+umask 077
 
 BASE="/var/lib/webosbrew/wireguard"
-HERE="$(CDPATH= cd -- "$(dirname -- "$0")" && pwd)"
+HERE="$(CDPATH='' cd -- "$(dirname -- "$0")" && pwd)"
 WG="$HERE/../bin/wg"
 WGGO="$HERE/../bin/wireguard-go"
 IFACE="wg0"
@@ -42,30 +43,28 @@ acquire_operation_lock() {
   echo "$$" > "$OPERATION_LOCK/pid"
 }
 
-restore_ipv6_after_failed_start() {
-  [ "$START_OK" -eq 0 ] || return 0
-  [ -f "$DEVFILE" ] && [ -f "$IPV6_STATE_FILE" ] || return 0
-
-  restore_dev="$(cat "$DEVFILE")"
-  restore_value="$(cat "$IPV6_STATE_FILE")"
-  if [ -n "$restore_dev" ] && [ -n "$restore_value" ]; then
-    sysctl -w "net.ipv6.conf.$restore_dev.disable_ipv6=$restore_value" >/dev/null 2>&1 || true
-  fi
-  rm -f "$IPV6_STATE_FILE"
-}
-
 release_operation_lock() {
   rc=$?
-  restore_ipv6_after_failed_start
+  trap - EXIT HUP INT TERM
+  if [ "$START_OK" -eq 0 ]; then
+    echo "== rolling back failed start =="
+    # Keep the operation lock while the same cleanup used by Stop runs.
+    if ! "$HERE/stop.sh" --lock-owner "$$"; then
+      echo "ERROR: rollback failed; retry Stop VPN before uninstalling" >&2
+      rc=1
+    fi
+  fi
   rm -rf "$OPERATION_LOCK"
   exit "$rc"
 }
 
 acquire_operation_lock
-trap release_operation_lock EXIT HUP INT TERM
+trap release_operation_lock EXIT
+trap 'exit 1' HUP INT TERM
 
 [ -x "$WG" ] || { echo "ERROR: does not exist $WG"; exit 1; }
 [ -x "$WGGO" ] || { echo "ERROR: does not exist $WGGO"; exit 1; }
+[ -x "$HERE/dns.sh" ] || { echo "ERROR: missing DNS helper"; exit 1; }
 [ -x "$HERE/exec-clean.sh" ] || { echo "ERROR: missing clean launcher"; exit 1; }
 [ -f "$CONF" ] || { echo "ERROR: missing $CONF"; exit 1; }
 
@@ -280,6 +279,9 @@ echo
 echo "== generated wg setconf file =="
 sed -E 's#^(PrivateKey[[:space:]]*=[[:space:]]*).*#\1REDACTED#;s#^(PresharedKey[[:space:]]*=[[:space:]]*).*#\1REDACTED#' "$SETCONF_FILE"
 
+echo "== restoring DNS before reconnect =="
+"$HERE/dns.sh" restore
+
 echo "== previous cleanup =="
 killall wireguard-go 2>/dev/null || true
 ip link del "$IFACE" 2>/dev/null || true
@@ -371,6 +373,9 @@ while IFS= read -r route || [ -n "$route" ]; do
   echo "route: $route dev $IFACE"
   ip route replace "$route" dev "$IFACE"
 done < "$APPLIED_ROUTES_FILE"
+
+echo "== applying VPN DNS =="
+"$HERE/dns.sh" apply
 
 echo "== status =="
 "$WG" show "$IFACE"

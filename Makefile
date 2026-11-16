@@ -1,4 +1,4 @@
-.PHONY: all binaries package verify clean
+.PHONY: all binaries package verify test clean
 
 all: package verify
 
@@ -10,6 +10,11 @@ package: binaries
 
 verify:
 	./scripts/verify-release.sh
+
+test:
+	go test -race ./uploader/wg-upload.go ./uploader/wg-upload_test.go
+	go vet ./uploader/wg-upload.go
+	./scripts/test-dns.sh
 
 clean:
 	rm -rf dist
