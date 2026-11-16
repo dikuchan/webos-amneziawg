@@ -1,14 +1,14 @@
 #!/bin/sh
 set -eu
 ROOT=$(CDPATH='' cd -- "$(dirname -- "$0")/.." && pwd)
-# Preserve the installed app ID so existing profiles and boot hooks survive updates.
-APP_ID=com.github.dikuchan.amneziawgtest
+# The controller migrates the previous app ID after its VPN has been stopped.
+APP_ID=com.github.dikuchan.amneziawg
 APP="$ROOT/app/$APP_ID"
 PACKAGER=${ARES_PACKAGE:-ares-package}
 TSC=${TSC:-tsc}
 cd "$ROOT"
 VERSION=$(node -p "require('./package.json').version")
-APP_VERSION=$(node -p "require('./app/com.github.dikuchan.amneziawgtest/appinfo.json').version")
+APP_VERSION=$(node -p "require('./app/com.github.dikuchan.amneziawg/appinfo.json').version")
 if [ "$VERSION" != "$APP_VERSION" ]; then
   echo 'Package and app versions differ' >&2
   exit 1
@@ -19,7 +19,7 @@ test -s "$APP/fonts/Inter-Medium.woff2"
 test -s "$APP/fonts/JetBrainsMono-Regular.woff2"
 test -x kit/bin/awg
 test -x kit/bin/amneziawg-go
-test -x kit/bin/awg-test
+test -x kit/bin/amneziawgctl
 mkdir -p "$APP/payload" "$APP/licenses" dist
 cp -R kit/bin kit/scripts "$APP/payload/"
 cp LICENSE "$APP/licenses/webos-amneziawg-MIT.txt"

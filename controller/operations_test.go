@@ -18,7 +18,7 @@ func TestAutostartCanBeEnabledAndDisabledWithoutStartingVPN(t *testing.T) {
 	if err := os.WriteFile(target, []byte("#!/bin/sh\nexit 0\n"), 0700); err != nil {
 		t.Fatal(err)
 	}
-	hook := filepath.Join(root, "75-amneziawg-test")
+	hook := filepath.Join(root, "75-amneziawg")
 
 	// Act: opt in. This only installs a symlink; it never executes the hook.
 	if err := setBootHook(hook, target, bootEnabled); err != nil {
@@ -48,7 +48,7 @@ func TestAutostartLeavesForeignHooksUntouched(t *testing.T) {
 		t.Run(kind, func(t *testing.T) {
 			// Arrange: the destination belongs to another component.
 			root := t.TempDir()
-			hook := filepath.Join(root, "75-amneziawg-test")
+			hook := filepath.Join(root, "75-amneziawg")
 			foreign := filepath.Join(root, "foreign-hook")
 			if kind == "file" {
 				if err := os.WriteFile(hook, []byte("foreign contents"), 0700); err != nil {

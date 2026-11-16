@@ -1,12 +1,12 @@
 #!/bin/sh
-# Called while start.sh/stop.sh holds operation.lock. Never edits ConnMan settings.
+# Called while the controller holds operation.lock. Never edits ConnMan settings.
 set -eu
 umask 077
-BASE=/var/lib/webosbrew/amneziawg-test
+BASE=/var/lib/webosbrew/amneziawg
 RUN="$BASE/run"
 STATE="$RUN/dns"
-CONF="$BASE/conf/awgtest0.conf"
-IFACE=awgtest0
+CONF="$BASE/conf/awg0.conf"
+IFACE=awg0
 CANDIDATE=
 STAGING=
 APPLY_IN_PROGRESS=0
@@ -110,7 +110,7 @@ awk '
 while read -r _ dns_ip; do
   route="$(ip route get "$dns_ip")"
   if ! printf '%s\n' "$route" | awk -v iface="$IFACE" '{for (i=1;i<NF;i++) if ($i=="dev" && $(i+1)==iface) ok=1} END {exit !ok}'; then
-    echo 'ERROR: DNS server is not routed through awgtest0; check AllowedIPs and LAN routes' >&2
+    echo 'ERROR: DNS server is not routed through awg0; check AllowedIPs and LAN routes' >&2
     exit 1
   fi
 done < "$CANDIDATE"

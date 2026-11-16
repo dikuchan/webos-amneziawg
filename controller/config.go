@@ -127,7 +127,7 @@ func parseConfig(input []byte) (candidateConfig, error) {
 			case "[peer]":
 				peers++
 				if section != "interface" || peers != 1 {
-					return c, errors.New("the test kit supports exactly one Peer")
+					return c, errors.New("profiles must contain exactly one Peer")
 				}
 				section = "peer"
 			default:
@@ -170,7 +170,7 @@ func parseConfig(input []byte) (candidateConfig, error) {
 			for _, text := range strings.Split(value, ",") {
 				ip, err := netip.ParseAddr(strings.TrimSpace(text))
 				if err != nil || !ip.Is4() || !ip.IsGlobalUnicast() || ip.As4()[0] == 0 || ip.As4()[0] >= 224 {
-					return c, errors.New("this test kit requires unicast IPv4 DNS servers")
+					return c, errors.New("DNS servers must be unicast IPv4 addresses")
 				}
 				c.DNS = append(c.DNS, ip)
 			}
@@ -203,7 +203,7 @@ func parseConfig(input []byte) (candidateConfig, error) {
 				}
 			}
 			if !full {
-				return c, errors.New("this test kit requires full-tunnel AllowedIPs = 0.0.0.0/0")
+				return c, errors.New("profiles must include AllowedIPs = 0.0.0.0/0")
 			}
 			c.Peer = append(c.Peer, s)
 		default:

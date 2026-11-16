@@ -13,7 +13,7 @@
     "noUnusedParameters": true,
     "noFallthroughCasesInSwitch": true,
     "rootDir": "web",
-    "outDir": "app/com.github.dikuchan.amneziawgtest",
+    "outDir": "app/com.github.dikuchan.amneziawg",
     "noEmitOnError": true
   },
   "files": [

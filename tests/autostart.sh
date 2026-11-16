@@ -1,9 +1,9 @@
 #!/bin/sh
 set -eu
 umask 077
-CTL=/tmp/awg-test-kit/bin/awg-test
-BASE=/var/lib/webosbrew/amneziawg-test
-HOOK=/var/lib/webosbrew/init.d/75-amneziawg-test
+CTL=/tmp/amneziawg-kit/bin/amneziawgctl
+BASE=/var/lib/webosbrew/amneziawg
+HOOK=/var/lib/webosbrew/init.d/75-amneziawg
 WG_HOOK=/var/lib/webosbrew/init.d/90-wireguard
 
 case "${1:-}" in
@@ -14,7 +14,7 @@ success)
     "$CTL" import /tmp/client.conf >/dev/null
     "$CTL" autostart enable >/tmp/autostart-result
     grep -q '^autostart=on$' /tmp/autostart-result
-    test "$(readlink "$HOOK")" = /tmp/awg-test-kit/scripts/boot.sh
+    test "$(readlink "$HOOK")" = /tmp/amneziawg-kit/scripts/boot.sh
     cp /etc/resolv.conf /tmp/boot-resolv.expected
     ip -4 route show default >/tmp/boot-default.expected
     # Simulate the next cold boot; import intentionally suppresses this boot.
@@ -29,7 +29,7 @@ success)
 
     # Assert: real handshake/data, logs, and a single persistent hook.
     grep -q '^autostart=on$' /tmp/boot-status
-    ip -4 route get 1.1.1.1 | grep -q 'dev awgtest0'
+    ip -4 route get 1.1.1.1 | grep -q 'dev awg0'
     ping -c 1 -W 2 10.203.7.1 >/dev/null
     "$CTL" logs >/tmp/boot-journal
     grep -q 'Boot autoconnect: connected.' /tmp/boot-journal
@@ -44,7 +44,7 @@ success)
     sleep 1
     "$CTL" status >/tmp/boot-status
     grep -q '^state=stopped$' /tmp/boot-status
-    if ip link show awgtest0 >/dev/null 2>&1; then echo 'FAIL: boot hook undid manual Stop'; exit 1; fi
+    if ip link show awg0 >/dev/null 2>&1; then echo 'FAIL: boot hook undid manual Stop'; exit 1; fi
     cmp /etc/resolv.conf /tmp/boot-resolv.expected
     ip -4 route show default >/tmp/boot-default.actual
     cmp /tmp/boot-default.actual /tmp/boot-default.expected
@@ -75,7 +75,7 @@ failure)
     # Assert: bounded failed attempt, automatic rollback, retained diagnosis.
     "$CTL" status >/tmp/boot-status
     grep -q '^state=stopped$' /tmp/boot-status
-    if ip link show awgtest0 >/dev/null 2>&1; then echo 'FAIL: failed boot left a tunnel'; exit 1; fi
+    if ip link show awg0 >/dev/null 2>&1; then echo 'FAIL: failed boot left a tunnel'; exit 1; fi
     cmp /etc/resolv.conf /tmp/boot-resolv.expected
     ip -4 route show default >/tmp/boot-default.actual
     cmp /tmp/boot-default.actual /tmp/boot-default.expected
@@ -104,7 +104,7 @@ cancel)
     "$CTL" status >/tmp/boot-status
     grep -q '^state=stopped$' /tmp/boot-status
     grep -q '^autostart=on$' /tmp/boot-status
-    if ip link show awgtest0 >/dev/null 2>&1; then echo 'FAIL: cancelled boot still connected'; exit 1; fi
+    if ip link show awg0 >/dev/null 2>&1; then echo 'FAIL: cancelled boot still connected'; exit 1; fi
     "$CTL" autostart disable >/dev/null
     echo 'PASS: manual Stop cancels a pending boot worker without disabling the next boot preference'
     ;;

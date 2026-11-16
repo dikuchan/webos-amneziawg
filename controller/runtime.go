@@ -18,11 +18,11 @@ import (
 	"time"
 )
 
-// Installation identifiers are stable across upgrades from the original builds.
+// The app and SSH-only kit share this private runtime.
 const (
-	base          = "/var/lib/webosbrew/amneziawg-test"
-	iface         = "awgtest0"
-	configPath    = base + "/conf/awgtest0.conf"
+	base          = "/var/lib/webosbrew/amneziawg"
+	iface         = "awg0"
+	configPath    = base + "/conf/awg0.conf"
 	statePath     = base + "/run/session.json"
 	routeProtocol = "242"
 	routeMetric   = "42431"
@@ -106,7 +106,7 @@ func prepareRuntime() error {
 			return err
 		}
 	}
-	return nil
+	return migrateInstallation()
 }
 
 var errOperationBusy = errors.New("another AmneziaWG operation is running")
@@ -394,6 +394,9 @@ func handshake(ctx context.Context, awg string) (int64, error) {
 }
 
 func start(ctx context.Context, kit string) (result error) {
+	if _, err := command(ctx, "ip", "link", "show", "awgtest0"); err == nil {
+		return errLegacyActive
+	}
 	if err := closeUpload(); err != nil {
 		return err
 	}
@@ -417,7 +420,7 @@ func start(ctx context.Context, kit string) (result error) {
 		}
 	}
 	if _, err := command(ctx, "ip", "link", "show", iface); err == nil {
-		return errors.New("awgtest0 already exists without our session; leaving it alone")
+		return errors.New("awg0 already exists without our session; leaving it alone")
 	}
 	_, c, err := readConfig(configPath)
 	if err != nil {
@@ -572,10 +575,8 @@ func start(ctx context.Context, kit string) (result error) {
 		}
 		pinnedDNS[address] = struct{}{}
 	}
-	for _, prefix := range []string{"0.0.0.0/1", "128.0.0.0/1"} {
-		if err := addOwnedRoute(ctx, s, []string{prefix, "dev", iface}); err != nil {
-			return err
-		}
+	if err := applyBootstrapRouting(ctx); err != nil {
+		return err
 	}
 	fmt.Println("state=connecting\nWaiting up to 20 seconds for an AWG handshake...")
 	probe := netip.MustParseAddr("1.1.1.1")
@@ -622,14 +623,17 @@ func start(ctx context.Context, kit string) (result error) {
 	if err := dns(ctx, kit, "apply"); err != nil {
 		return err
 	}
+	if err := startupRoutingSources(ctx); err != nil {
+		return err
+	}
 	if err := applyConfiguredRouting(ctx); err != nil {
 		return err
 	}
-	mode, err := readRoutingMode()
+	document, err := readRoutingDocument()
 	if err != nil {
 		return err
 	}
-	if mode == routingRU {
+	if hasRemoteSources(document) {
 		if err := startWorker(kit, routingWorker); err != nil {
 			return err
 		}
@@ -656,8 +660,8 @@ func status(ctx context.Context, kit string) error {
 		fmt.Println("state=stopped")
 		return nil
 	}
-	if !ownsProcess(s) {
-		fmt.Println("state=cleanup-required\nDaemon is absent; run Stop to restore network state.")
+	if !ownsProcess(s) || routingNeedsRecovery() {
+		fmt.Println("state=cleanup-required\nNetwork recovery required; run Stop to restore network state.")
 		return nil
 	}
 	last, err := handshake(ctx, filepath.Join(kit, "bin", "awg"))

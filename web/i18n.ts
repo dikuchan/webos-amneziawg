@@ -1,6 +1,9 @@
 type UILanguage = "en" | "ru";
 
 const englishMessages = {
+    webSettings:"Web settings", routingMenu:"Routing", routeAll:"All traffic", routeExclude:"Exclude lists", routeInclude:"Only lists",
+    routeAllDetail:"All destinations through VPN", routeExcludeDetail:"Listed destinations connect directly", routeIncludeDetail:"Only listed destinations through VPN",
+    editLists:"Edit lists", sourceCount:"Sources", listsMissing:"Add or update lists in web settings", legacyActive:"Disconnect the previous AmneziaWG app to migrate",
     checking: "Checking…", unknown: "Status unavailable", disconnected: "Disconnected",
     connecting: "Connecting…", disconnecting: "Disconnecting…", connected: "Connected",
     recoveryNeeded: "Network recovery needed", connect: "Connect", disconnect: "Disconnect",
@@ -9,7 +12,7 @@ const englishMessages = {
     settings: "Settings", back: "Back", import: "Import", importAction: "Import configuration",
     refresh: "Refresh", refreshLogs: "Refresh logs", loading: "Loading…", logsEmpty: "No logs yet",
     lastError: "Last error", startup: "Connect on device startup", language: "Language",
-    uploadOpen: "Open upload", uploadAddress: "Open this address on a device on the same network", uploadCode: "Code", uploadWaiting: "Waiting for a .conf file…",
+    uploadOpen: "Open web settings", uploadAddress: "Open this address on a device on the same network", uploadCode: "Code", uploadWaiting: "Waiting for a .conf file…",
     uploadEnded: "Upload session ended", uploadLocked: "Too many incorrect codes", uploadFailed: "Could not open upload",
     uploadCloseFailed: "Could not close upload", uploadCheckFailed: "Could not check upload",
     ruDirect: "Russian services directly", routingFailed: "Could not change routing", routingUpdateFailed: "Could not update the list",
@@ -38,6 +41,9 @@ type MessageCatalog = { readonly [key in MessageKey]: string };
 const uiMessages: { readonly [language in UILanguage]: MessageCatalog } = {
     en: englishMessages,
     ru: {
+        webSettings:"Веб-настройки", routingMenu:"Маршрутизация", routeAll:"Весь трафик", routeExclude:"Исключения", routeInclude:"Только списки",
+        routeAllDetail:"Все адреса через VPN", routeExcludeDetail:"Адреса из списков — напрямую", routeIncludeDetail:"Через VPN — только адреса из списков",
+        editLists:"Редактировать списки", sourceCount:"Источники", listsMissing:"Добавь или обнови списки в веб-настройках", legacyActive:"Отключи предыдущую версию AmneziaWG для переноса",
         checking: "Проверка…", unknown: "Статус неизвестен", disconnected: "Отключено",
         connecting: "Подключение…", disconnecting: "Отключение…", connected: "Подключено",
         recoveryNeeded: "Нужно восстановить сеть", connect: "Подключить", disconnect: "Отключить",
@@ -46,7 +52,7 @@ const uiMessages: { readonly [language in UILanguage]: MessageCatalog } = {
         settings: "Настройки", back: "Назад", import: "Импорт", importAction: "Импортировать конфигурацию",
         refresh: "Обновить", refreshLogs: "Обновить логи", loading: "Загрузка…", logsEmpty: "Логов пока нет",
         lastError: "Последняя ошибка", startup: "Подключаться при запуске устройства", language: "Язык",
-        uploadOpen: "Открыть загрузку", uploadAddress: "Открой адрес на устройстве в той же сети", uploadCode: "Код", uploadWaiting: "Ожидание файла .conf…",
+        uploadOpen: "Открыть веб-настройки", uploadAddress: "Открой адрес на устройстве в той же сети", uploadCode: "Код", uploadWaiting: "Ожидание файла .conf…",
         uploadEnded: "Загрузка завершена", uploadLocked: "Слишком много неверных кодов", uploadFailed: "Не удалось открыть загрузку",
         uploadCloseFailed: "Не удалось закрыть загрузку", uploadCheckFailed: "Не удалось проверить загрузку",
         ruDirect: "Российские сервисы напрямую", routingFailed: "Не удалось изменить маршрутизацию", routingUpdateFailed: "Не удалось обновить список",

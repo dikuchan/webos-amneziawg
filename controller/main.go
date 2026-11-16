@@ -8,7 +8,7 @@ import (
 	"time"
 )
 
-var version = "0.3.1"
+var version = "0.4.0"
 
 func main() {
 	if len(os.Args) == 2 && os.Args[1] == "--version" {
@@ -16,7 +16,7 @@ func main() {
 		return
 	}
 	if len(os.Args) < 2 {
-		fmt.Fprintln(os.Stderr, "Usage: awg-test import FILE | start | stop | status | logs | autostart enable|disable | upload open [en|ru]|status|close | routing all|ru-direct|update | boot | check")
+		fmt.Fprintln(os.Stderr, "Usage: amneziawgctl import FILE | start | stop | status | logs | autostart enable|disable | lan open [en|ru]|status|close | routing all|exclude|include|update | boot | check")
 		os.Exit(2)
 	}
 	var err error
@@ -58,7 +58,7 @@ func main() {
 			if err != nil {
 				return err
 			}
-			ctx, cancel := context.WithTimeout(context.Background(), 60*time.Second)
+			ctx, cancel := context.WithTimeout(context.Background(), 90*time.Second)
 			defer cancel()
 			switch os.Args[1] {
 			case "import", "start", "stop":
@@ -90,9 +90,9 @@ func main() {
 					recordEvent(action + ": completed.")
 				}
 				return result
-			case "upload":
+			case "lan":
 				if len(os.Args) < 3 || len(os.Args) > 4 {
-					return fmt.Errorf("upload requires open, status or close")
+					return fmt.Errorf("lan requires open, status or close")
 				}
 				switch os.Args[2] {
 				case "open":
@@ -100,26 +100,26 @@ func main() {
 					if len(os.Args) == 4 {
 						lang = os.Args[3]
 						if lang != "en" && lang != "ru" {
-							return fmt.Errorf("upload language must be en or ru")
+							return fmt.Errorf("lan language must be en or ru")
 						}
 					}
 					return openUpload(ctx, kit, lang)
 				case "status":
 					if len(os.Args) != 3 {
-						return fmt.Errorf("unexpected upload arguments")
+						return fmt.Errorf("unexpected lan arguments")
 					}
 					return printUploadStatus()
 				case "close":
 					if len(os.Args) != 3 {
-						return fmt.Errorf("unexpected upload arguments")
+						return fmt.Errorf("unexpected lan arguments")
 					}
 					return closeUpload()
 				default:
-					return fmt.Errorf("unknown upload command")
+					return fmt.Errorf("unknown lan command")
 				}
 			case "routing":
 				if len(os.Args) != 3 {
-					return fmt.Errorf("routing requires all, ru-direct or update")
+					return fmt.Errorf("routing requires all, exclude, include or update")
 				}
 				return setRoutingMode(ctx, kit, routingMode(os.Args[2]))
 			case "status":

@@ -14,7 +14,7 @@ import (
 )
 
 const (
-	bootHook          = "/var/lib/webosbrew/init.d/75-amneziawg-test"
+	bootHook          = "/var/lib/webosbrew/init.d/75-amneziawg"
 	ordinaryWGHook    = "/var/lib/webosbrew/init.d/90-wireguard"
 	journalPath       = base + "/run/events.log"
 	journalLimitBytes = 65536
@@ -323,7 +323,7 @@ func runBoot(ctx context.Context, kit string) (result error) {
 			return nil
 		}
 		recordEvent("Boot autoconnect: connecting.")
-		starting, done := context.WithTimeout(ctx, 60*time.Second)
+		starting, done := context.WithTimeout(ctx, 90*time.Second)
 		defer done()
 		if err := start(starting, kit); err != nil {
 			return err

@@ -1,7 +1,7 @@
 // Browser preview only. Never packaged in the TV application.
 enum PreviewState { Stopped, Imported, Connected, Cleanup }
-let previewRouting: "all" | "ru-direct" = "all";
-let previewRoutingUpdate: "bundled" | "current" = "bundled";
+let previewRouting: "all" | "exclude" | "include" = "all";
+let previewRoutingUpdate: "ready" | "failed" = "ready";
 let previewUpload: "closed" | "waiting" | "imported" = "closed";
 let previewUploadStarted = 0;
 let previewAutostart: "on" | "off" = "off";
@@ -11,7 +11,7 @@ let previewState = scenario === "connected" || scenario === "base64" ? PreviewSt
     scenario === "cleanup" ? PreviewState.Cleanup : scenario === "missing-config" ? PreviewState.Stopped : PreviewState.Imported;
 
 function previewRoutingStatus(): string {
-    return "routing="+previewRouting+"\nrouting_prefixes=635\nrouting_updated=1794825135\nrouting_update="+previewRoutingUpdate;
+    return "routing="+previewRouting+"\nrouting_sources=1\nrouting_prefixes=635\nrouting_updated=1794825135\nrouting_update="+previewRoutingUpdate;
 }
 function previewUploadStatus(): string {
     if (scenario === "upload-success" && previewUpload === "waiting" && Date.now()-previewUploadStarted > 7000) { previewUpload = "imported"; previewState = PreviewState.Imported; }
@@ -21,7 +21,7 @@ function previewStatus(): string {
     switch (previewState) {
         case PreviewState.Stopped: case PreviewState.Imported: return previewRoutingStatus()+"\nautostart="+previewAutostart+"\nstate=stopped";
         case PreviewState.Cleanup: return previewRoutingStatus()+"\nautostart="+previewAutostart+"\nstate=cleanup-required\nDaemon is absent; run Stop to restore network state.";
-        case PreviewState.Connected: return previewRoutingStatus()+"\nautostart="+previewAutostart+"\nstate=connected\ninterface=awgtest0\npid=14998\nhandshake_age_seconds=3\nmtu=1280\nreceived_bytes=1048576\nsent_bytes=131072\nphysical_ipv6=suspended-on-eth0";
+        case PreviewState.Connected: return previewRoutingStatus()+"\nautostart="+previewAutostart+"\nstate=connected\ninterface=awg0\npid=14998\nhandshake_age_seconds=3\nmtu=1280\nreceived_bytes=1048576\nsent_bytes=131072\nphysical_ipv6=suspended-on-eth0";
     }
 }
 
@@ -44,59 +44,60 @@ class PalmServiceBridge {
         let stdout = "";
         let stderr = "";
         let delayMs = 100;
-        if (command.includes("awg-test upload open")) {
+        if (command.includes("amneziawgctl lan open")) {
             previewUpload = "waiting"; previewUploadStarted = Date.now(); stdout = previewUploadStatus();
             if (scenario === "upload-error") { stdout = ""; stderr = "ERROR: private LAN IPv4 address is unavailable"; code = 1; }
-        } else if (command.includes("awg-test upload status")) {
+        } else if (command.includes("amneziawgctl lan status")) {
             stdout = previewUploadStatus();
-        } else if (command.includes("awg-test upload close")) {
+        } else if (command.includes("amneziawgctl lan close")) {
             if (previewUpload !== "imported") previewUpload = "closed";
-        } else if (command.includes("awg-test routing ru-direct")) {
-            previewRouting = "ru-direct"; stdout = previewRoutingStatus();
-        } else if (command.includes("awg-test routing all")) {
+        } else if (command.includes("amneziawgctl routing exclude")) {
+            previewRouting = "exclude"; stdout = previewRoutingStatus();
+        } else if(command.includes("amneziawgctl routing include")){previewRouting="include";stdout=previewRoutingStatus();
+        } else if (command.includes("amneziawgctl routing all")) {
             previewRouting = "all"; stdout = previewRoutingStatus();
-        } else if (command.includes("awg-test routing update")) {
-            delayMs = 1200; previewRoutingUpdate = "current"; stdout = previewRoutingStatus();
-        } else if (command.includes("awg-test import ")) {
+        } else if (command.includes("amneziawgctl routing update")) {
+            delayMs = 1200; previewRoutingUpdate = "ready"; stdout = previewRoutingStatus();
+        } else if (command.includes("amneziawgctl import ")) {
             previewState = PreviewState.Imported;
             stdout = "config=imported\nmtu=1280\ndns_servers=1\nfeatures=header-protection,RandomTrailers,DisableCookies";
-        } else if (command.includes("awg-test start")) {
+        } else if (command.includes("amneziawgctl start")) {
             delayMs = 1200;
             if (scenario === "wg-active") {
-                stderr = "ERROR: ordinary wg0 is active; stop WG manually before testing AWG"; code = 1;
+                stderr = "ERROR: ordinary wg0 is active; stop WG manually before starting AWG"; code = 1;
             } else if (previewState === PreviewState.Stopped) {
                 stderr = "ERROR: cannot open config file"; code = 1;
             } else if (scenario === "handshake-failure") {
-                stdout = "state=connecting\nStart failed; rolling back the test session.\nstate=stopped\nOriginal DNS and IPv6 state restored; ordinary WG was not changed.";
+                stdout = "state=connecting\nStart failed; rolling back the session.\nstate=stopped\nOriginal DNS and IPv6 state restored; ordinary WG was not changed.";
                 stderr = "ERROR: no handshake in 20 seconds; check server/config/connectivity"; code = 1;
             } else {
                 previewState = PreviewState.Connected;
                 stdout = previewStatus();
             }
-        } else if (command.includes("awg-test stop")) {
+        } else if (command.includes("amneziawgctl stop")) {
             previewState = PreviewState.Imported;
             stdout = "state=stopped\nOriginal DNS and IPv6 state restored; ordinary WG was not changed.";
-        } else if (command.includes("awg-test logs")) {
+        } else if (command.includes("amneziawgctl logs")) {
             stdout = previewJournal;
-        } else if (command.includes("awg-test autostart enable")) {
+        } else if (command.includes("amneziawgctl autostart enable")) {
             if (scenario === "autostart-conflict") {
                 stderr = "ERROR: ordinary WireGuard autostart is enabled; disable it in the WG app first"; code = 1;
             } else { previewAutostart = "on"; stdout = "autostart=on"; }
-        } else if (command.includes("awg-test autostart disable")) {
+        } else if (command.includes("amneziawgctl autostart disable")) {
             previewAutostart = "off"; stdout = "autostart=off";
-        } else if (command.includes("awg-test status")) {
+        } else if (command.includes("amneziawgctl status")) {
             stdout = previewStatus();
         } else {
             throw new Error("Unexpected preview command");
         }
-        if (!command.includes("awg-test status") && !command.includes("awg-test logs")) previewJournal += "\n2026-11-16 19:00:00Z  "+(code === 0 ? "Operation completed." : stderr);
+        if (!command.includes("amneziawgctl status") && !command.includes("amneziawgctl logs")) previewJournal += "\n2026-11-16 19:00:00Z  "+(code === 0 ? "Operation completed." : stderr);
         if (scenario === "partial-error") {
             previewState = PreviewState.Connected;
             stdout = previewStatus();
             stderr = "ERROR: cannot read tunnel transfer counters";
             code = 1;
         }
-        if (scenario !== "no-marker") stdout += "\nAWG_TEST_RC=" + code + "\n";
+        if (scenario !== "no-marker") stdout += "\nAWG_RC=" + code + "\n";
         const result = scenario === "service-error" ? {returnValue: false, errorText: "Not permitted"} :
             scenario === "base64" ? {returnValue: true, stdoutBytes: btoa(stdout), stderrBytes: btoa(stderr)} :
             {returnValue: true, stdoutString: stdout, stderrString: stderr};

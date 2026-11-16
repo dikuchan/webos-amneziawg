@@ -15,7 +15,7 @@ import (
 type workerKind string
 
 const (
-	uploadWorker  workerKind = "upload-serve"
+	uploadWorker  workerKind = "lan-serve"
 	routingWorker workerKind = "route-updater"
 )
 
@@ -72,7 +72,7 @@ func startWorker(kit string, kind workerKind) error {
 		return err
 	}
 	defer null.Close()
-	binary := filepath.Join(kit, "bin", "awg-test")
+	binary := filepath.Join(kit, "bin", "amneziawgctl")
 	child := exec.Command(binary, string(kind))
 	child.Stdin, child.Stdout, child.Stderr = null, null, null
 	child.SysProcAttr = &syscall.SysProcAttr{Setsid: true}

@@ -1,6 +1,6 @@
 {
-  "id": "com.github.dikuchan.amneziawgtest",
-  "version": "0.3.1",
+  "id": "com.github.dikuchan.amneziawg",
+  "version": "0.4.0",
   "vendor": "dikuchan",
   "type": "web",
   "main": "index.html",

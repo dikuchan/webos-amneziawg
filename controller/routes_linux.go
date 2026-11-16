@@ -72,7 +72,7 @@ func (socket *routeSocket) receive(ctx context.Context) ([]syscall.NetlinkMessag
 	}
 	return nil, errors.New("route socket response timed out")
 }
-func kernelDirectRoutes(ctx context.Context) ([]directRoute, error) {
+func kernelManagedRoutes(ctx context.Context) ([]managedRoute, error) {
 	socket, err := openRouteSocket()
 	if err != nil {
 		return nil, err
@@ -84,7 +84,7 @@ func kernelDirectRoutes(ctx context.Context) ([]directRoute, error) {
 	if err := syscall.Sendto(socket.fd, request, 0, &syscall.SockaddrNetlink{Family: syscall.AF_NETLINK}); err != nil {
 		return nil, err
 	}
-	var result []directRoute
+	var result []managedRoute
 	total := 0
 	for packets := 0; packets < 1024; packets++ {
 		messages, err := socket.receive(ctx)
@@ -112,7 +112,7 @@ func kernelDirectRoutes(ctx context.Context) ([]directRoute, error) {
 				continue
 			}
 			data := message.Data
-			if data[0] != syscall.AF_INET || data[5] != 242 || data[7] != syscall.RTN_UNICAST {
+			if data[0] != syscall.AF_INET || data[3] != 0 || data[5] != 242 || data[7] != syscall.RTN_UNICAST {
 				continue
 			}
 			attrs, err := syscall.ParseNetlinkRouteAttr(&message)
@@ -142,7 +142,7 @@ func kernelDirectRoutes(ctx context.Context) ([]directRoute, error) {
 			if table != syscall.RT_TABLE_MAIN || metric != splitRouteMetric || index == 0 || data[1] > 32 {
 				continue
 			}
-			result = append(result, directRoute{netip.PrefixFrom(address, int(data[1])).Masked(), int(index), gateway})
+			result = append(result, managedRoute{netip.PrefixFrom(address, int(data[1])).Masked(), int(index), gateway})
 		}
 	}
 	return nil, errors.New("kernel route dump did not terminate")
@@ -160,7 +160,7 @@ func routeUintAttribute(kind uint16, value uint32) []byte {
 	binary.NativeEndian.PutUint32(raw, value)
 	return routeAttribute(kind, raw)
 }
-func routeBody(route directRoute) []byte {
+func routeBody(route managedRoute) []byte {
 	body := make([]byte, 12)
 	body[0] = syscall.AF_INET
 	body[1] = byte(route.Prefix.Bits())
@@ -183,11 +183,12 @@ func routeBody(route directRoute) []byte {
 
 type routeMutation struct {
 	Kind  uint16
-	Route directRoute
+	Flags uint16
+	Route managedRoute
 }
 
-func mutateDirectRoutes(ctx context.Context, add, remove []directRoute) error {
-	if len(add)+len(remove) > 8192 {
+func mutateManagedRoutes(ctx context.Context, add, remove []managedRoute) error {
+	if len(add)+len(remove) > 4*routeLimit {
 		return errors.New("too many route mutations")
 	}
 	if len(add)+len(remove) == 0 {
@@ -199,13 +200,26 @@ func mutateDirectRoutes(ctx context.Context, add, remove []directRoute) error {
 	}
 	defer syscall.Close(socket.fd)
 	operations := make([]routeMutation, 0, len(add)+len(remove))
-	for _, route := range add {
-		operations = append(operations, routeMutation{syscall.RTM_NEWROUTE, route})
+	removedByPrefix := make(map[netip.Prefix]managedRoute, len(remove))
+	for _, r := range remove {
+		removedByPrefix[r.Prefix] = r
 	}
-	for _, route := range remove {
-		operations = append(operations, routeMutation{syscall.RTM_DELROUTE, route})
+	replaced := make(map[managedRoute]struct{})
+	for _, r := range add {
+		flags := uint16(syscall.NLM_F_CREATE | syscall.NLM_F_EXCL)
+		if old, ok := removedByPrefix[r.Prefix]; ok {
+			flags = syscall.NLM_F_CREATE | syscall.NLM_F_REPLACE
+			replaced[old] = struct{}{}
+		}
+		operations = append(operations, routeMutation{Kind: syscall.RTM_NEWROUTE, Flags: flags, Route: r})
 	}
-	for first := 0; first < len(operations); first += 64 {
+	addCount := len(operations)
+	for _, r := range remove {
+		if _, ok := replaced[r]; !ok {
+			operations = append(operations, routeMutation{Kind: syscall.RTM_DELROUTE, Route: r})
+		}
+	}
+	for first := 0; first < len(operations); {
 		if err := ctx.Err(); err != nil {
 			return err
 		}
@@ -213,13 +227,14 @@ func mutateDirectRoutes(ctx context.Context, add, remove []directRoute) error {
 		if last > len(operations) {
 			last = len(operations)
 		}
+		if first < addCount && last > addCount {
+			last = addCount
+		}
 		waiting := make(map[uint32]uint16, last-first)
 		var packet []byte
 		for _, operation := range operations[first:last] {
 			flags := uint16(syscall.NLM_F_REQUEST | syscall.NLM_F_ACK)
-			if operation.Kind == syscall.RTM_NEWROUTE {
-				flags |= syscall.NLM_F_CREATE | syscall.NLM_F_EXCL
-			}
+			flags |= operation.Flags
 			raw, seq := socket.packet(operation.Kind, flags, routeBody(operation.Route))
 			packet = append(packet, raw...)
 			waiting[seq] = operation.Kind
@@ -250,6 +265,7 @@ func mutateDirectRoutes(ctx context.Context, add, remove []directRoute) error {
 				delete(waiting, message.Header.Seq)
 			}
 		}
+		first = last
 	}
 	return nil
 }

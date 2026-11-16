@@ -7,9 +7,9 @@ import (
 	"errors"
 )
 
-func kernelDirectRoutes(context.Context) ([]directRoute, error) {
+func kernelManagedRoutes(context.Context) ([]managedRoute, error) {
 	return nil, errors.New("split routing requires Linux")
 }
-func mutateDirectRoutes(context.Context, []directRoute, []directRoute) error {
+func mutateManagedRoutes(context.Context, []managedRoute, []managedRoute) error {
 	return errors.New("split routing requires Linux")
 }

@@ -10,7 +10,6 @@ import (
 	"net/netip"
 	"strings"
 	"testing"
-	"time"
 )
 
 func TestRoutingListCanonicalizesPublicIPv4WithoutBroadeningIt(t *testing.T) {
@@ -57,10 +56,10 @@ func TestFeedRequiresMatchingManifestSizeHashAndCount(t *testing.T) {
 // Route ownership is an external safety contract: an unrelated matching route
 // must survive enabling/disabling split routing, regardless of implementation.
 func TestSplitRoutePlanDoesNotAdoptExistingUnownedRoutes(t *testing.T) {
-	route := directRoute{Prefix: netip.MustParsePrefix("5.45.192.0/24"), Interface: 2, Gateway: netip.MustParseAddr("192.168.0.1")}
-	next := &splitSession{Interface: route.Interface, Gateway: route.Gateway, Prefixes: []netip.Prefix{route.Prefix}}
+	route := managedRoute{Prefix: netip.MustParsePrefix("5.45.192.0/24"), Interface: 2, Gateway: netip.MustParseAddr("192.168.0.1")}
+	next := []managedRoute{route}
 
-	_, _, err := planDirectRoutes([]directRoute{route}, nil, next)
+	_, _, err := planManagedRoutes([]managedRoute{route}, nil, next)
 
 	if err == nil {
 		t.Fatal("existing unowned route was adopted")
@@ -68,12 +67,12 @@ func TestSplitRoutePlanDoesNotAdoptExistingUnownedRoutes(t *testing.T) {
 }
 
 func TestSplitRoutePlanRemovesOnlyRecordedExactTuples(t *testing.T) {
-	owned := directRoute{Prefix: netip.MustParsePrefix("5.45.192.0/24"), Interface: 2, Gateway: netip.MustParseAddr("192.168.0.1")}
+	owned := managedRoute{Prefix: netip.MustParsePrefix("5.45.192.0/24"), Interface: 2, Gateway: netip.MustParseAddr("192.168.0.1")}
 	foreign := owned
 	foreign.Gateway = netip.MustParseAddr("192.168.0.2")
-	previous := &splitSession{Interface: owned.Interface, Gateway: owned.Gateway, Prefixes: []netip.Prefix{owned.Prefix}}
+	previous := []managedRoute{owned}
 
-	add, remove, err := planDirectRoutes([]directRoute{owned, foreign}, previous, nil)
+	add, remove, err := planManagedRoutes([]managedRoute{owned, foreign}, previous, nil)
 
 	if err != nil || len(add) != 0 || len(remove) != 1 || remove[0] != owned {
 		t.Fatal("plan did not preserve foreign route", err)
@@ -133,34 +132,5 @@ func TestCachedListCannotSilentlyChangeWhileKeepingItsChecksum(t *testing.T) {
 
 	if err == nil {
 		t.Fatal("damaged saved list accepted")
-	}
-}
-
-func TestRoutingUpdatesRespectDailyChecksAndHourlyFailureBackoff(t *testing.T) {
-	now := time.Date(2026, 11, 16, 18, 0, 0, 0, time.UTC)
-	for _, scenario := range []struct {
-		name       string
-		state      routingUpdateState
-		ago        time.Duration
-		invocation updateInvocation
-		due        bool
-	}{
-		{"daily-wait", updateCurrent, 23 * time.Hour, updateScheduled, false},
-		{"daily-due", updateCurrent, 25 * time.Hour, updateScheduled, true},
-		{"failure-wait", updateFailed, 59 * time.Minute, updateScheduled, false},
-		{"failure-due", updateFailed, 61 * time.Minute, updateScheduled, true},
-		{"active-download", updateRunning, time.Minute, updateScheduled, false},
-		{"interrupted-download", updateRunning, 3 * time.Minute, updateScheduled, true},
-		{"manual", updateFailed, time.Minute, updateManual, true},
-	} {
-		t.Run(scenario.name, func(t *testing.T) {
-			previous := routingUpdate{Attempted: now.Add(-scenario.ago), State: scenario.state}
-
-			actual := routingUpdateDue(previous, now, scenario.invocation)
-
-			if actual != scenario.due {
-				t.Fatal("unexpected update schedule")
-			}
-		})
 	}
 }

@@ -2,19 +2,19 @@
 # Behaviour tests in an isolated Linux network/mount namespace, never on the TV.
 set -eu
 ROOT=$(CDPATH='' cd -- "$(dirname -- "$0")/.." && pwd)
-CTL="$ROOT/test-bin/awg-test"
+CTL="$ROOT/test-bin/amneziawgctl"
 [ -x "$CTL" ] || { echo 'Expected test controller is missing' >&2; exit 1; }
 [ -f /.dockerenv ] || { echo 'This test must run inside its disposable Docker container' >&2; exit 1; }
-mkdir -p /tmp/awg-test-kit/bin /tmp/awg-test-kit/scripts /dev/net
-cp "$ROOT"/test-bin/* /tmp/awg-test-kit/bin/
-cp "$ROOT"/kit/scripts/dns.sh /tmp/awg-test-kit/scripts/
-CTL=/tmp/awg-test-kit/bin/awg-test
+mkdir -p /tmp/amneziawg-kit/bin /tmp/amneziawg-kit/scripts /dev/net
+cp "$ROOT"/test-bin/* /tmp/amneziawg-kit/bin/
+cp "$ROOT"/kit/scripts/dns.sh /tmp/amneziawg-kit/scripts/
+CTL=/tmp/amneziawg-kit/bin/amneziawgctl
 [ -e /dev/net/tun ] || mknod /dev/net/tun c 10 200
 mount --make-rprivate /
 umount /etc/resolv.conf
 printf 'nameserver 192.0.2.53\nsearch home.test\n' > /etc/resolv.conf
 cp /etc/resolv.conf /tmp/resolv.expected
-mkdir -p /var/lib/webosbrew/amneziawg-test
+mkdir -p /var/lib/webosbrew/amneziawg
 ip link add awglan type veth peer name awgpeer
 ip addr add 172.31.222.1/24 dev awglan
 ip link set awglan up
@@ -97,16 +97,16 @@ cmp /etc/resolv.conf /tmp/resolv.expected
 ip route show default > /tmp/default.actual
 cmp /tmp/default.actual /tmp/default.expected
 ip route show 198.51.100.77/32 | grep -q 'metric 44'
-if ip link show awgtest0 >/dev/null 2>&1; then echo 'Own interface left behind'; exit 1; fi
+if ip link show awg0 >/dev/null 2>&1; then echo 'Own interface left behind'; exit 1; fi
 echo 'PASS: Stop restores DNS and leaves foreign/default routes alone'
 
 # Arrange: another application reuses our now-free interface name.
-ip link add awgtest0 type dummy
+ip link add awg0 type dummy
 # Act: stopping an absent session.
 "$CTL" stop
 # Assert: foreign interface survives.
-ip link show awgtest0 >/dev/null
-ip link del awgtest0
+ip link show awg0 >/dev/null
+ip link del awg0
 echo 'PASS: Stop cannot delete an unowned interface'
 
 # Arrange: no reachable server.
@@ -118,6 +118,6 @@ if "$CTL" start > /tmp/result 2>&1; then echo 'Unreachable server accepted'; exi
 cmp /etc/resolv.conf /tmp/resolv.expected
 ip route show default > /tmp/default.actual
 cmp /tmp/default.actual /tmp/default.expected
-if ip link show awgtest0 >/dev/null 2>&1; then echo 'Failed Start left interface'; exit 1; fi
+if ip link show awg0 >/dev/null 2>&1; then echo 'Failed Start left interface'; exit 1; fi
 ip route show 198.51.100.77/32 | grep -q 'metric 44'
 echo 'PASS: failed handshake rolls back without changing WG or default route'

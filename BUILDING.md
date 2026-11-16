@@ -43,11 +43,11 @@ PATH="$PWD/node_modules/.bin:$PATH" sh tools/package.sh
 
 This uses the pinned `@webos-tools/cli` packager and produces:
 
-- `dist/webos-amneziawg_0.3.1_all.ipk`
-- `dist/webos-amneziawg-0.3.1-armv7.tar.gz`
+- `dist/webos-amneziawg_0.4.0_all.ipk`
+- `dist/webos-amneziawg-0.4.0-armv7.tar.gz`
 - `dist/SHA256SUMS`
 
-The internal app ID remains `com.github.dikuchan.amneziawgtest` so an update reuses the existing installation. Generated binaries, payload copies and packages are excluded from Git.
+The app ID is `com.github.dikuchan.amneziawg`. Upgrades from 0.3.x use a separate installation and controller migration; see README.md. Generated binaries, payload copies and packages are excluded from Git.
 
 ## Checks
 
@@ -57,10 +57,11 @@ go vet ./controller
 npx tsc -p tsconfig.json
 npx tsc -p tests/tsconfig.preview.json
 npx tsc -p tests/tsconfig.i18n.json
+npx tsc -p tests/tsconfig.lan.json
 node -e 'const fs=require("node:fs"),vm=require("node:vm");vm.runInThisContext(fs.readFileSync("tests/i18n-check/web/i18n.js","utf8")+"\n"+fs.readFileSync("tests/i18n-check/tests/i18n.test.js","utf8"));'
 ```
 
-Go tests use a local HTTP listener. They cover profile validation, private operation logs, boot-hook ownership, one-time uploads, routing-source integrity, update intervals and exact ownership of routes. Run ShellCheck on changed shell scripts.
+Go tests use a local HTTP listener. They cover profile validation, private operation logs, boot-hook ownership, authenticated LAN imports and edits, profile migration, source integrity, independent update intervals and exact route ownership. Run ShellCheck on changed shell scripts.
 
 For a browser preview, serve the built app with the separately compiled `tests/mock-bridge.ts` loaded before `i18n.js` and `app.js`. Keep the mock outside the packaged app. Check remote navigation, focus, Back, both languages, import completion, routing settings and logs at 1920×1080 and 1280×720. Check the UI extracted from the final IPK after minification.
 
@@ -68,11 +69,17 @@ For a browser preview, serve the built app with the separately compiled `tests/m
 
 Use disposable ARM64 Linux containers on an internal Docker bridge `172.31.222.0/24`: server `.2`, client `.3`. Only `NET_ADMIN` and `/dev/net/tun` are required. Do not use a real provider profile.
 
-Place native ARM64 `awg-test`, `amneziawg-go` and `awg` binaries in `/source/test-bin` and the scripts under `/source/tests`. Run `tests/server.sh` on the server and copy its synthetic `/tmp/awg-server/client.conf` to the client's `/tmp/client.conf`.
+Build a native ARM64 image containing `ip`, `ping` and CA certificates, and use synthetic credentials only:
 
-- `tests/network.sh` checks a real handshake, encrypted traffic, MTU, the ordinary WG guard and recovery.
-- `tests/failed-handshake.sh` runs after stopping the server and checks failed-start rollback.
-- `tests/split-network.sh` checks the bundled bypass list, direct and tunneled packets, live switching, route collisions, updater shutdown and cleanup. Add `5.45.192.1/32` and `203.0.113.1/32` to the server's loopback first. Run on a fresh client; the script ends with a LAN upload server ready for a multipart POST from the other container.
-- `tests/autostart.sh` checks successful, failed and cancelled boot connections.
+```sh
+docker build --platform linux/arm64 -t webos-amneziawg-nettools -f tests/Dockerfile .
+sh tests/split-network.sh
+```
+
+The host-side routing script builds its small Go fixtures, creates an internal bridge and two ARM64 containers, copies `test-bin/{amneziawgctl,amneziawg-go,awg}`, and cleans up its own resources on exit. It covers authenticated LAN editing, mixed local and HTTPS sources, include/exclude, encrypted packets, a private test CA with normal TLS validation, updates through VPN for unlisted feed hosts, SHA-256 failure fallback, `/0` routes, LAN protection, route collisions and idempotent Stop. `AWG_TEST_IMAGE` can select an existing compatible local image. Disable physical IPv6 through container sysctls; no `SYS_ADMIN`, AppArmor overrides or host mounts are used.
+
+These tests protect observable routing and recovery contracts. Pure parser/scheduler tests are cheap and deterministic; the few real-network tests cover behavior that a mocked command runner cannot establish. No coverage target or per-function test requirement is used.
+
+The older client scripts can run separately on a prepared disposable client: `tests/network.sh` checks handshake, MTU and ordinary WG guards; `tests/failed-handshake.sh` runs after stopping the peer; `tests/autostart.sh` checks successful, failed and cancelled boot connections. Copy `kit/scripts` and the native binaries into `/tmp/amneziawg-kit` and generate a profile using `tests/server.sh`.
 
 The ordinary network tests use a profile without DNS and do not exercise resolver bind mounts. `tests/lifecycle.sh` covers actual DNS mounts and needs a suitable disposable Linux environment. TV validation is still needed for HBC permissions, firmware compatibility, HTTPS trust roots, resolver recovery, cold boot and native video applications.

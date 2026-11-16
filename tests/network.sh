@@ -3,10 +3,10 @@
 # No mount calls, SYS_ADMIN, AppArmor overrides, host mounts or external network.
 set -eu
 ROOT=/source
-mkdir -p /tmp/awg-test-kit/bin /tmp/awg-test-kit/scripts
-cp "$ROOT"/test-bin/* /tmp/awg-test-kit/bin/
-cp "$ROOT"/kit/scripts/dns.sh /tmp/awg-test-kit/scripts/
-CTL=/tmp/awg-test-kit/bin/awg-test
+mkdir -p /tmp/amneziawg-kit/bin /tmp/amneziawg-kit/scripts
+cp "$ROOT"/test-bin/* /tmp/amneziawg-kit/bin/
+cp "$ROOT"/kit/scripts/dns.sh /tmp/amneziawg-kit/scripts/
+CTL=/tmp/amneziawg-kit/bin/amneziawgctl
 ip route add default via 172.31.222.1 dev eth0 2>/dev/null || true
 cp /etc/resolv.conf /tmp/resolv.expected
 ip route show default > /tmp/default.expected
@@ -48,21 +48,21 @@ cmp /etc/resolv.conf /tmp/resolv.expected
 ip route show default > /tmp/default.actual
 cmp /tmp/default.actual /tmp/default.expected
 ip route show 198.51.100.77/32 | grep -q 'metric 44'
-if ip link show awgtest0 >/dev/null 2>&1; then echo 'Test interface remained'; exit 1; fi
+if ip link show awg0 >/dev/null 2>&1; then echo 'Test interface remained'; exit 1; fi
 echo 'PASS: Stop leaves default/foreign routes and DNS unchanged'
 
 # Arrange: the interface name was reused after Stop.
-ip link add awgtest0 type dummy
+ip link add awg0 type dummy
 # Act.
 "$CTL" stop
 # Assert: Stop must not delete an unowned interface.
-ip link show awgtest0 >/dev/null
-ip link del awgtest0
+ip link show awg0 >/dev/null
+ip link del awg0
 echo 'PASS: foreign interface is left alone'
 
 # Arrange: pretend an earlier DNS mount is covered by another manager's mount.
 # Existing mount IDs are read; no mount is created or removed by this test.
-STATE=/var/lib/webosbrew/amneziawg-test/run/dns
+STATE=/var/lib/webosbrew/amneziawg/run/dns
 mkdir -p "$STATE"
 cat /proc/sys/kernel/random/boot_id > "$STATE/boot-id"
 printf '/etc/resolv.conf\n' > "$STATE/target"

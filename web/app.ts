@@ -6,13 +6,13 @@ interface PalmBridge {
 declare const PalmServiceBridge: { new(): PalmBridge } | undefined;
 
 type Action = "start" | "stop" | "status" | "logs" | "autostart-enable" | "autostart-disable" |
-    "upload-open" | "upload-status" | "upload-close" | "routing-all" | "routing-ru" | "routing-update";
-type RoutingMode = "all" | "ru-direct";
-interface Routing { mode: RoutingMode; prefixes: number; updated: number; update: "bundled" | "current" | "updating" | "failed"; }
+    "upload-open" | "upload-status" | "upload-close" | "routing-all" | "routing-exclude" | "routing-include" | "routing-update";
+type RoutingMode = "all" | "exclude" | "include";
+interface Routing { mode: RoutingMode; sources:number; prefixes:number; updated:number; update:"ready"|"failed"|"missing"; }
 type Upload = {kind:"idle" | "imported" | "closed" | "expired" | "locked" | "failed"} |
     {kind:"waiting"; url:string; code:string; expires:number};
 type AutoPreference = "enabled" | "disabled" | "unknown";
-type AppView = "home" | "config" | "logs" | "settings";
+type AppView = "home" | "config" | "logs" | "settings" | "routing";
 type Invocation = "user" | "refresh";
 type CommandFailure =
     | { kind: "command-error"; output: string }
@@ -29,8 +29,8 @@ type Tunnel =
     | { kind: "connecting" | "connected"; statistics: Statistics };
 type Notice = { kind: "error" | "success"; message: MessageKey } | null;
 
-const applicationKit = "/media/developer/apps/usr/palm/applications/com.github.dikuchan.amneziawgtest/payload";
-const commandTimeoutMs = 90000;
+const applicationKit = "/media/developer/apps/usr/palm/applications/com.github.dikuchan.amneziawg/payload";
+const commandTimeoutMs = 120000;
 
 function requiredElement<T extends HTMLElement>(id: string, kind: { new(): T }): T {
     const element = document.getElementById(id);
@@ -66,7 +66,7 @@ function decodeResponse(payload: string): CommandResult {
     }
     const stdout = field("stdoutString", "stdoutBytes");
     const stderr = field("stderrString", "stderrBytes");
-    const marker = /\nAWG_TEST_RC=(\d+)\s*$/.exec(stdout);
+    const marker = /\nAWG_RC=(\d+)\s*$/.exec(stdout);
     if (marker === null) return { kind: "service-error", message: "incompleteDetail", output: "" };
     return {
         kind: marker[1] === "0" ? "success" : "command-error",
@@ -109,11 +109,11 @@ function execute(action: Action): Promise<CommandResult> {
                 }
             };
             const args = action === "autostart-enable" ? "autostart enable" : action === "autostart-disable" ? "autostart disable" :
-                action === "upload-open" ? "upload open " + language : action === "upload-status" ? "upload status" :
-                action === "upload-close" ? "upload close" : action === "routing-all" ? "routing all" :
-                action === "routing-ru" ? "routing ru-direct" : action === "routing-update" ? "routing update" : action;
-            const command = "LD_PRELOAD= " + applicationKit + "/bin/awg-test " + args +
-                "; awg_test_result=$?; printf '\\nAWG_TEST_RC=%s\\n' \"$awg_test_result\"";
+                action === "upload-open" ? "lan open " + language : action === "upload-status" ? "lan status" :
+                action === "upload-close" ? "lan close" : action === "routing-all" ? "routing all" :
+                action === "routing-exclude" ? "routing exclude" : action === "routing-include" ? "routing include" : action === "routing-update" ? "routing update" : action;
+            const command = "LD_PRELOAD= " + applicationKit + "/bin/amneziawgctl " + args +
+                "; awg_result=$?; printf '\\nAWG_RC=%s\\n' \"$awg_result\"";
             bridge.call("luna://org.webosbrew.hbchannel.service/exec", JSON.stringify({ command: command }));
         } catch {
             finish({ kind: "service-error", message: "serviceDetail", output: "" });
@@ -136,7 +136,7 @@ function readTunnel(output: string): Tunnel | null {
     const kind = fields.get("state");
     if (kind === "stopped" || kind === "cleanup-required") return { kind: kind };
     if (kind === "connecting" || kind === "connected") {
-        if (fields.get("interface") !== "awgtest0") return null;
+        if (fields.get("interface") !== "awg0") return null;
         return { kind: kind, statistics: {
             handshakeAge: number("handshake_age_seconds"), mtu: number("mtu"),
             received: number("received_bytes"), sent: number("sent_bytes")
@@ -170,6 +170,8 @@ function readAutostart(output: string): AutoPreference {
 
 function errorMessage(action: Action, failure: CommandFailure): MessageKey {
     const output = failure.output;
+    if(output.includes("stop the previous AmneziaWG app"))return "legacyActive";
+    if(output.includes("import or update routing lists first"))return "listsMissing";
     if (output.includes("ordinary wg0 is active")) return "wgActive";
     if (output.includes("ordinary WireGuard autostart is enabled")) return "wgAutostart";
     if (output.includes("cannot open config file")) return "configurationMissing";
@@ -179,7 +181,7 @@ function errorMessage(action: Action, failure: CommandFailure): MessageKey {
         case "upload-open": return "uploadFailed";
         case "upload-status": return "uploadCheckFailed";
         case "upload-close": return "uploadCloseFailed";
-        case "routing-all": case "routing-ru": return "routingFailed";
+        case "routing-all": case "routing-exclude": case "routing-include": return "routingFailed";
         case "routing-update": return "routingUpdateFailed";
         case "start": return "connectFailed";
         case "stop": return "disconnectFailed";
@@ -261,6 +263,8 @@ const uploadCode = requiredElement("upload-code", HTMLElement);
 const uploadMessage = requiredElement("upload-message", HTMLParagraphElement);
 const routingButton = requiredElement("routing", HTMLButtonElement);
 const routingInfo = requiredElement("routing-info", HTMLDivElement);
+const routingScreen = requiredElement("routing-screen",HTMLElement);
+const editListsButton = requiredElement("edit-lists",HTMLButtonElement);
 const routingSummary = requiredElement("routing-summary", HTMLSpanElement);
 const routingRefresh = requiredElement("routing-refresh", HTMLButtonElement);
 const logOutput = requiredElement("log-output", HTMLPreElement);
@@ -278,6 +282,8 @@ let uploadError: MessageKey | null = null;
 let pending: Action | null = null;
 let queued: {action:Action; invocation:Invocation} | null = null;
 let currentView: AppView = "home";
+let configReturn:"home"|"routing"="home";
+let routingMessage:MessageKey|null=null;
 let notice: Notice = null;
 let lastError: CommandFailure | null = null;
 let logText: string | null = null;
@@ -313,26 +319,31 @@ function render(): void {
     const uploadPending = pending === "upload-open" || pending === "upload-close";
     importButton.hidden = upload.kind === "waiting" || uploadPending;
     requiredElement("upload-open-tool",HTMLDivElement).hidden = importButton.hidden;
-    importButton.setAttribute("aria-disabled",String(tunnel.kind !== "stopped" || pending !== null && !readOnlyAction(pending)));
+    importButton.setAttribute("aria-disabled",String(pending !== null && !readOnlyAction(pending)));
     uploadDetails.hidden = upload.kind !== "waiting";
     uploadURL.textContent = upload.kind === "waiting" ? upload.url : "";
     uploadCode.textContent = upload.kind === "waiting" ? upload.code.slice(0,4)+" "+upload.code.slice(4) : "";
-    importNote.textContent = text(tunnel.kind === "stopped" ? "uploadAddress" : tunnel.kind === "unknown" ? "importCheck" : "importDisconnect");
+    importNote.textContent = text("uploadAddress");
     const uploadMessageKey = uploadError !== null ? uploadError : uploadPending ? "loading" :
-        upload.kind === "waiting" ? "uploadWaiting" : upload.kind === "locked" ? "uploadLocked" :
+        upload.kind === "waiting" ? null : upload.kind === "locked" ? "uploadLocked" :
         upload.kind === "closed" || upload.kind === "expired" ? "uploadEnded" : upload.kind === "failed" ? "uploadFailed" : null;
     uploadMessage.textContent = uploadMessageKey === null ? "" : text(uploadMessageKey);
     uploadMessage.dataset["kind"] = uploadError !== null || upload.kind === "failed" || upload.kind === "locked" ? "error" : "";
-    routingButton.setAttribute("aria-checked",String(routing !== null && routing.mode === "ru-direct"));
-    routingButton.setAttribute("aria-disabled",String(routing === null || pending !== null && !readOnlyAction(pending)));
-    routingInfo.hidden = routing === null || routing.mode !== "ru-direct";
-    routingRefresh.setAttribute("aria-disabled",String(pending !== null && !readOnlyAction(pending) || routing !== null && routing.update === "updating"));
-    routingRefresh.setAttribute("aria-busy",String(pending === "routing-update" || routing !== null && routing.update === "updating"));
-    if (routing !== null) {
-        const listDate = new Intl.DateTimeFormat(language === "ru" ? "ru-RU" : "en-GB",{day:"2-digit",month:"2-digit",year:"numeric"}).format(new Date(routing.updated*1000));
-        routingSummary.textContent = routing.update === "updating" || pending === "routing-update" ? text("routingUpdating") :
-            "RU Direct · "+routing.prefixes+" "+text("routingSubnets")+" · "+listDate+(routing.update === "failed" ? " · "+text("routingCached") : "");
+    const modeKey:MessageKey=routing===null?"unknown":routing.mode==="all"?"routeAll":routing.mode==="exclude"?"routeExclude":"routeInclude";
+    requiredElement("routing-value",HTMLSpanElement).textContent=text(modeKey);
+    routingButton.setAttribute("aria-disabled",String(pending!==null&&!readOnlyAction(pending)));
+    for(const mode of ["all","exclude","include"] as const){
+        const button=requiredElement("mode-"+mode,HTMLButtonElement);
+        button.setAttribute("aria-checked",String(routing!==null&&routing.mode===mode));
+        button.setAttribute("aria-disabled",String(routing===null||pending!==null&&!readOnlyAction(pending)));
     }
+    routingInfo.hidden=routing===null;
+    routingRefresh.setAttribute("aria-disabled",String(pending!==null&&!readOnlyAction(pending)));
+    routingRefresh.setAttribute("aria-busy",String(pending==="routing-update"));
+    if(routing!==null){
+        routingSummary.textContent=pending==="routing-update"?text("routingUpdating"):text("sourceCount")+": "+routing.sources+" · "+routing.prefixes+" "+text("routingSubnets")+(routing.update==="failed"?" · "+text("routingCached"):"");
+    }
+    requiredElement("routing-notice",HTMLParagraphElement).textContent=routingMessage===null?"":text(routingMessage);
     autostartButton.setAttribute("aria-checked",String(autostart === "enabled"));
     autostartButton.setAttribute("aria-disabled",String(autostart === "unknown" || pending !== null && pending !== "status" && pending !== "logs"));
     settingsNotice.textContent = settingsMessage === null ? "" : text(settingsMessage);
@@ -348,9 +359,11 @@ function openScreen(next: AppView): void {
     config.hidden = next !== "config";
     logs.hidden = next !== "logs";
     settings.hidden = next !== "settings";
+    routingScreen.hidden=next!=="routing";
     let target: HTMLButtonElement;
     switch (next) {
         case "home": target = primary; break;
+        case "routing": target=requiredElement("mode-"+(routing===null?"all":routing.mode),HTMLButtonElement);break;
         case "config": target = requiredElement("config-back", HTMLButtonElement); break;
         case "logs": target = requiredElement("logs-back", HTMLButtonElement); break;
         case "settings": target = autostartButton.getAttribute("aria-disabled") !== "true" ? autostartButton : languageButton; break;
@@ -359,12 +372,19 @@ function openScreen(next: AppView): void {
     if (next === "logs") { renderLogs(); logOutput.scrollTop = logOutput.scrollHeight; }
 }
 
-function closeScreen(): void {
-    const target = currentView === "config" ? configButton : currentView === "logs" ? logsButton : settingsButton;
-    const previous = currentView;
-    openScreen("home");
-    target.focus();
-    if (previous === "config") { upload = {kind:"idle"}; uploadError = null; void run("upload-close","refresh"); }
+function closeScreen():void{
+    const previous=currentView;
+    if(previous==="routing"){openScreen("settings");routingButton.focus();return;}
+    if(previous==="config"){
+        upload={kind:"idle"};uploadError=null;
+        openScreen(configReturn);
+        if(configReturn==="routing")editListsButton.focus();else configButton.focus();
+        void run("upload-close","refresh");return;
+    }
+    openScreen("home");(previous==="logs"?logsButton:settingsButton).focus();
+}
+function openWebSettings(from:"home"|"routing"):void{
+    configReturn=from;upload={kind:"idle"};uploadError=null;openScreen("config");render();void run("upload-open","user");
 }
 
 function commandFields(output:string): Map<string,string> {
@@ -375,13 +395,11 @@ function commandFields(output:string): Map<string,string> {
     }
     return fields;
 }
-function readRouting(output:string): Routing | null {
-    const fields = commandFields(output);
-    const mode = fields.get("routing"), update = fields.get("routing_update");
-    const prefixes = Number(fields.get("routing_prefixes")), updated = Number(fields.get("routing_updated"));
-    if ((mode !== "all" && mode !== "ru-direct") || (update !== "bundled" && update !== "current" && update !== "updating" && update !== "failed") ||
-        !Number.isInteger(prefixes) || prefixes < 1 || prefixes > 2048 || !Number.isSafeInteger(updated) || updated < 1704067200 || updated > 4102444800) return null;
-    return {mode:mode, update:update, prefixes:prefixes, updated:updated};
+function readRouting(output:string):Routing|null{
+    const fields=commandFields(output);const mode=fields.get("routing"),update=fields.get("routing_update");
+    const sources=Number(fields.get("routing_sources")),prefixes=Number(fields.get("routing_prefixes")),updated=Number(fields.get("routing_updated"));
+    if((mode!=="all"&&mode!=="exclude"&&mode!=="include")||(update!=="ready"&&update!=="failed"&&update!=="missing")||!Number.isInteger(sources)||sources<0||sources>8||!Number.isInteger(prefixes)||prefixes<0||prefixes>16384||!Number.isSafeInteger(updated)||updated<0||updated>4102444800)return null;
+    return{mode:mode,update:update,sources:sources,prefixes:prefixes,updated:updated};
 }
 function readUpload(output:string): Upload | null {
     const fields = commandFields(output);
@@ -405,8 +423,9 @@ async function run(action: Action, invocation: Invocation): Promise<void> {
     pending = action;
     if (invocation === "user" && action !== "logs") { notice = null; lastError = null; }
     const autoAction = action === "autostart-enable" || action === "autostart-disable";
-    const routingAction = action === "routing-all" || action === "routing-ru" || action === "routing-update";
-    if (autoAction || routingAction) settingsMessage = null;
+    const routingAction = action === "routing-all" || action === "routing-exclude" || action === "routing-include" || action === "routing-update";
+    if(autoAction)settingsMessage=null;
+    if(routingAction)routingMessage=null;
     if (action === "upload-open") uploadError = null;
     render();
     let result = await execute(action);
@@ -441,7 +460,8 @@ async function run(action: Action, invocation: Invocation): Promise<void> {
     if (result.kind !== "success") {
         // A failed upload response must never place the on-screen PIN in logs.
         lastError = uploadAction(action) ? {...result,output:""} : result;
-        if (autoAction || routingAction) settingsMessage = errorMessage(action,result);
+        if(autoAction)settingsMessage=errorMessage(action,result);
+        else if(routingAction)routingMessage=errorMessage(action,result);
         else if (uploadAction(action)) {
             if (currentView === "config") uploadError = errorMessage(action,result);
             else if (action === "upload-close") notice = {kind:"error",message:"uploadCloseFailed"};
@@ -458,11 +478,8 @@ async function run(action: Action, invocation: Invocation): Promise<void> {
 }
 
 primary.addEventListener("click", () => { void run(primaryAction(tunnel),"user"); });
-configButton.addEventListener("click", () => {
-    upload = {kind:"idle"}; uploadError = null;
-    openScreen("config"); render();
-    if (tunnel.kind === "stopped") void run("upload-open","user");
-});
+configButton.addEventListener("click",()=>openWebSettings("home"));
+editListsButton.addEventListener("click",()=>openWebSettings("routing"));
 logsButton.addEventListener("click", () => { openScreen("logs"); void run("logs","user"); });
 settingsButton.addEventListener("click", () => { openScreen("settings"); void run("status","refresh"); });
 importButton.addEventListener("click", () => {
@@ -471,8 +488,9 @@ importButton.addEventListener("click", () => {
 autostartButton.addEventListener("click", () => {
     if (autostartButton.getAttribute("aria-disabled") !== "true") void run(autostart === "enabled" ? "autostart-disable" : "autostart-enable","user");
 });
-routingButton.addEventListener("click", () => {
-    if (routing !== null && routingButton.getAttribute("aria-disabled") !== "true") void run(routing.mode === "ru-direct" ? "routing-all" : "routing-ru","user");
+routingButton.addEventListener("click",()=>{if(routingButton.getAttribute("aria-disabled")!=="true")openScreen("routing");});
+for(const mode of ["all","exclude","include"] as const)requiredElement("mode-"+mode,HTMLButtonElement).addEventListener("click",()=>{
+    if(pending===null||readOnlyAction(pending))void run(mode==="all"?"routing-all":mode==="exclude"?"routing-exclude":"routing-include","user");
 });
 routingRefresh.addEventListener("click", () => {
     if (routingRefresh.getAttribute("aria-disabled") !== "true") void run("routing-update","user");
@@ -485,10 +503,10 @@ languageButton.addEventListener("click", () => {
     render();
 });
 requiredElement("refresh-logs",HTMLButtonElement).addEventListener("click", () => { void run("logs","user"); });
-for (const id of ["config-back","logs-back","settings-back"]) requiredElement(id,HTMLButtonElement).addEventListener("click",closeScreen);
+for (const id of ["config-back","logs-back","settings-back","routing-back"]) requiredElement(id,HTMLButtonElement).addEventListener("click",closeScreen);
 
 function focusable(): HTMLButtonElement[] {
-    const container = currentView === "home" ? home : currentView === "config" ? config : currentView === "logs" ? logs : settings;
+    const container = currentView === "home" ? home : currentView === "config" ? config : currentView === "logs" ? logs : currentView==="routing"?routingScreen:settings;
     return Array.from(container.querySelectorAll<HTMLButtonElement>("button")).filter(button => !button.hidden && button.getAttribute("aria-disabled") !== "true" && button.getClientRects().length > 0);
 }
 
@@ -517,7 +535,7 @@ document.addEventListener("keydown", (event: KeyboardEvent) => {
             const next = tools[Math.max(0,Math.min(tools.length-1,index+(code === 37 ? -1 : 1)))];
             if (next) next.focus();
         }
-    } else if (currentView === "settings" && (code === 38 || code === 40)) {
+    } else if ((currentView === "settings" || currentView === "routing") && (code === 38 || code === 40)) {
         const next = buttons[Math.max(0,Math.min(buttons.length-1,current+(code === 38 ? -1 : 1)))];
         if (next) next.focus();
     } else if (code === 38 || code === 40) {
