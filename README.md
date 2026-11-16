@@ -121,4 +121,4 @@ The controller uses the Go standard library. The UI uses strict TypeScript with 
 
 This fork is based on [RodriguezCF/webos-wireguard](https://github.com/RodriguezCF/webos-wireguard); its DNS work is retained on the `codex/dns-support` branch. Upstream history and copyright notices are preserved.
 
-The controller and adapted scripts are MIT-licensed; bundled components retain their own licenses. Sources and pins for the Amnezia icon, Lucide icons, fonts and routing data are listed in [licenses/ASSETS.md](licenses/ASSETS.md). This is an independent client, not an official Amnezia application.
+The controller and adapted scripts are MIT-licensed; bundled components retain their own licenses. Sources and pins for the Amnezia icon, Lucide icons, fonts and routing data are listed in [web/assets/README.md](web/assets/README.md). This is an independent client, not an official Amnezia application.

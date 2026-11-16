@@ -1,0 +1,24 @@
+{
+  "plugins": [
+    "@ianvs/prettier-plugin-sort-imports",
+    "prettier-plugin-go-template"
+  ],
+  "importOrder": [
+    "<BUILTIN_MODULES>",
+    "",
+    "<THIRD_PARTY_MODULES>",
+    "",
+    "^[./]"
+  ],
+  "importOrderCaseSensitive": false,
+  "importOrderTypeScriptVersion": "5.9.3",
+  "proseWrap": "preserve",
+  "overrides": [
+    {
+      "files": ["web/admin.html"],
+      "options": {
+        "parser": "go-template"
+      }
+    }
+  ]
+}

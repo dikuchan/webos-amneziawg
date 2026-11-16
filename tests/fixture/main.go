@@ -23,7 +23,7 @@ import (
 
 func main() {
 	root := "/tmp/awg-feed"
-	if err := os.MkdirAll(root, 0700); err != nil {
+	if err := os.MkdirAll(root, 0o700); err != nil {
 		log.Fatal(err)
 	}
 	key, err := ecdsa.GenerateKey(elliptic.P256(), rand.Reader)
@@ -36,7 +36,7 @@ func main() {
 		log.Fatal(err)
 	}
 	certPEM := pem.EncodeToMemory(&pem.Block{Type: "CERTIFICATE", Bytes: der})
-	if err := os.WriteFile(filepath.Join(root, "ca.pem"), certPEM, 0600); err != nil {
+	if err := os.WriteFile(filepath.Join(root, "ca.pem"), certPEM, 0o600); err != nil {
 		log.Fatal(err)
 	}
 	keyDER, err := x509.MarshalECPrivateKey(key)
@@ -71,7 +71,7 @@ func main() {
 			http.Error(w, "peer", 500)
 			return
 		}
-		file, err := os.OpenFile(filepath.Join(root, "peers.log"), os.O_CREATE|os.O_APPEND|os.O_WRONLY, 0600)
+		file, err := os.OpenFile(filepath.Join(root, "peers.log"), os.O_CREATE|os.O_APPEND|os.O_WRONLY, 0o600)
 		if err != nil {
 			http.Error(w, "log", 500)
 			return

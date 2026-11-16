@@ -1,23 +1,22 @@
 {
   "compilerOptions": {
     "target": "ES2017",
-    "module": "es2015",
-    "lib": [
-      "ES2017",
-      "DOM"
-    ],
+    "module": "ESNext",
+    "moduleResolution": "Bundler",
+    "lib": ["ES2017", "DOM", "DOM.Iterable"],
+    "types": [],
     "strict": true,
     "noUncheckedIndexedAccess": true,
     "exactOptionalPropertyTypes": true,
     "noUnusedLocals": true,
     "noUnusedParameters": true,
     "noFallthroughCasesInSwitch": true,
-    "rootDir": "web",
-    "outDir": "app/com.github.dikuchan.amneziawg",
-    "noEmitOnError": true
+    "noImplicitReturns": true,
+    "noImplicitOverride": true,
+    "noPropertyAccessFromIndexSignature": true,
+    "forceConsistentCasingInFileNames": true,
+    "noEmit": true
   },
-  "files": [
-    "web/i18n.ts",
-    "web/app.ts"
-  ]
+  "include": ["web/**/*.ts"],
+  "exclude": ["web/**/*.test.ts"]
 }

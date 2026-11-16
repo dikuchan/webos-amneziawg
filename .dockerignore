@@ -2,5 +2,7 @@
 .build
 node_modules
 dist
-kit/bin
 .local
+dependencies/**/.git
+*.conf
+!dependencies/**/*.conf

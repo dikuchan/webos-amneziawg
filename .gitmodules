@@ -1,0 +1,9 @@
+[submodule "dependencies/musl"]
+	path = dependencies/musl
+	url = https://git.musl-libc.org/git/musl
+[submodule "dependencies/amneziawg-go"]
+	path = dependencies/amneziawg-go
+	url = https://github.com/amnezia-vpn/amneziawg-go.git
+[submodule "dependencies/amneziawg-tools"]
+	path = dependencies/amneziawg-tools
+	url = https://github.com/amnezia-vpn/amneziawg-tools.git

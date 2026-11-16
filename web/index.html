@@ -1,0 +1,540 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width,initial-scale=1" />
+    <title>AmneziaWG</title>
+    <link rel="stylesheet" href="app.css" />
+  </head>
+  <body>
+    <main id="home">
+      <header>
+        <img src="assets/largeIcon.png" alt="" /><span>AmneziaWG</span>
+      </header>
+      <section class="connection" aria-label="VPN">
+        <button id="primary" aria-label="Check VPN status">
+          <svg
+            class="icon"
+            aria-hidden="true"
+            focusable="false"
+            xmlns="http://www.w3.org/2000/svg"
+            width="24"
+            height="24"
+            viewBox="0 0 24 24"
+            fill="none"
+            stroke="currentColor"
+            stroke-width="2"
+            stroke-linecap="round"
+            stroke-linejoin="round"
+          >
+            <path d="M12 2v10" />
+            <path d="M18.4 6.6a9 9 0 1 1-12.77.04" />
+          </svg>
+        </button>
+        <h1 id="state" role="status">Checking…</h1>
+        <p id="notice" aria-live="polite"></p>
+        <div
+          class="traffic"
+          id="traffic"
+          data-i18n-aria="traffic"
+          aria-label="VPN traffic"
+        >
+          <div
+            class="traffic-cell"
+            id="received-cell"
+            data-i18n-aria="received"
+            aria-label="Downloaded"
+          >
+            <svg
+              class="icon"
+              aria-hidden="true"
+              focusable="false"
+              xmlns="http://www.w3.org/2000/svg"
+              width="24"
+              height="24"
+              viewBox="0 0 24 24"
+              fill="none"
+              stroke="currentColor"
+              stroke-width="2"
+              stroke-linecap="round"
+              stroke-linejoin="round"
+            >
+              <path d="M12 5v14" />
+              <path d="m19 12-7 7-7-7" /></svg
+            ><span id="received">—</span>
+          </div>
+          <div
+            class="traffic-cell"
+            id="sent-cell"
+            data-i18n-aria="sent"
+            aria-label="Uploaded"
+          >
+            <svg
+              class="icon"
+              aria-hidden="true"
+              focusable="false"
+              xmlns="http://www.w3.org/2000/svg"
+              width="24"
+              height="24"
+              viewBox="0 0 24 24"
+              fill="none"
+              stroke="currentColor"
+              stroke-width="2"
+              stroke-linecap="round"
+              stroke-linejoin="round"
+            >
+              <path d="m5 12 7-7 7 7" />
+              <path d="M12 19V5" /></svg
+            ><span id="sent">—</span>
+          </div>
+        </div>
+      </section>
+      <nav class="toolbar" data-i18n-aria="controls" aria-label="VPN controls">
+        <div class="tool">
+          <button
+            id="open-config"
+            class="icon-button"
+            data-i18n-aria="configuration"
+            aria-label="Configuration"
+          >
+            <svg
+              class="icon"
+              aria-hidden="true"
+              focusable="false"
+              xmlns="http://www.w3.org/2000/svg"
+              width="24"
+              height="24"
+              viewBox="0 0 24 24"
+              fill="none"
+              stroke="currentColor"
+              stroke-width="2"
+              stroke-linecap="round"
+              stroke-linejoin="round"
+            >
+              <path
+                d="M6 22a2 2 0 0 1-2-2V4a2 2 0 0 1 2-2h8a2.4 2.4 0 0 1 1.704.706l3.588 3.588A2.4 2.4 0 0 1 20 8v12a2 2 0 0 1-2 2z"
+              />
+              <path d="M14 2v5a1 1 0 0 0 1 1h5" />
+              <path d="M12 12v6" />
+              <path d="m15 15-3-3-3 3" />
+            </svg></button
+          ><span class="caption" aria-hidden="true" data-i18n="configuration"
+            >Configuration</span
+          >
+        </div>
+        <div class="tool">
+          <button
+            id="open-logs"
+            class="icon-button"
+            data-i18n-aria="logs"
+            aria-label="Logs"
+          >
+            <svg
+              class="icon"
+              aria-hidden="true"
+              focusable="false"
+              xmlns="http://www.w3.org/2000/svg"
+              width="24"
+              height="24"
+              viewBox="0 0 24 24"
+              fill="none"
+              stroke="currentColor"
+              stroke-width="2"
+              stroke-linecap="round"
+              stroke-linejoin="round"
+            >
+              <path d="M3 5h1" />
+              <path d="M3 12h1" />
+              <path d="M3 19h1" />
+              <path d="M8 5h1" />
+              <path d="M8 12h1" />
+              <path d="M8 19h1" />
+              <path d="M13 5h8" />
+              <path d="M13 12h8" />
+              <path d="M13 19h8" />
+            </svg></button
+          ><span class="caption" aria-hidden="true" data-i18n="logs">Logs</span>
+        </div>
+        <div class="tool">
+          <button
+            id="open-settings"
+            class="icon-button"
+            data-i18n-aria="settings"
+            aria-label="Settings"
+          >
+            <svg
+              class="icon"
+              aria-hidden="true"
+              focusable="false"
+              xmlns="http://www.w3.org/2000/svg"
+              width="24"
+              height="24"
+              viewBox="0 0 24 24"
+              fill="none"
+              stroke="currentColor"
+              stroke-width="2"
+              stroke-linecap="round"
+              stroke-linejoin="round"
+            >
+              <path
+                d="M9.671 4.136a2.34 2.34 0 0 1 4.659 0 2.34 2.34 0 0 0 3.319 1.915 2.34 2.34 0 0 1 2.33 4.033 2.34 2.34 0 0 0 0 3.831 2.34 2.34 0 0 1-2.33 4.033 2.34 2.34 0 0 0-3.319 1.915 2.34 2.34 0 0 1-4.659 0 2.34 2.34 0 0 0-3.32-1.915 2.34 2.34 0 0 1-2.33-4.033 2.34 2.34 0 0 0 0-3.831A2.34 2.34 0 0 1 6.35 6.051a2.34 2.34 0 0 0 3.319-1.915"
+              />
+              <circle cx="12" cy="12" r="3" />
+            </svg></button
+          ><span class="caption" aria-hidden="true" data-i18n="settings"
+            >Settings</span
+          >
+        </div>
+      </nav>
+    </main>
+    <section
+      id="config"
+      class="overlay"
+      role="dialog"
+      aria-modal="true"
+      aria-labelledby="config-title"
+      hidden
+    >
+      <div class="panel">
+        <h2 id="config-title" data-i18n="webSettings">Web settings</h2>
+        <p id="import-note"></p>
+        <div id="upload-details" hidden>
+          <code id="upload-url" class="upload-url"></code>
+          <div class="upload-pin">
+            <span data-i18n="uploadCode">Code</span
+            ><code id="upload-code"></code>
+          </div>
+        </div>
+        <p id="upload-message" role="status"></p>
+        <div class="panel-actions">
+          <div class="tool">
+            <button
+              id="config-back"
+              class="icon-button"
+              data-i18n-aria="back"
+              aria-label="Back"
+            >
+              <svg
+                class="icon"
+                aria-hidden="true"
+                focusable="false"
+                xmlns="http://www.w3.org/2000/svg"
+                width="24"
+                height="24"
+                viewBox="0 0 24 24"
+                fill="none"
+                stroke="currentColor"
+                stroke-width="2"
+                stroke-linecap="round"
+                stroke-linejoin="round"
+              >
+                <path d="m15 18-6-6 6-6" />
+              </svg></button
+            ><span class="caption" aria-hidden="true" data-i18n="back"
+              >Back</span
+            >
+          </div>
+          <div class="tool" id="upload-open-tool">
+            <button
+              id="import"
+              class="icon-button"
+              data-i18n-aria="uploadOpen"
+              aria-label="Open upload"
+            >
+              <svg
+                class="icon"
+                aria-hidden="true"
+                focusable="false"
+                xmlns="http://www.w3.org/2000/svg"
+                width="24"
+                height="24"
+                viewBox="0 0 24 24"
+                fill="none"
+                stroke="currentColor"
+                stroke-width="2"
+                stroke-linecap="round"
+                stroke-linejoin="round"
+              >
+                <path
+                  d="M6 22a2 2 0 0 1-2-2V4a2 2 0 0 1 2-2h8a2.4 2.4 0 0 1 1.704.706l3.588 3.588A2.4 2.4 0 0 1 20 8v12a2 2 0 0 1-2 2z"
+                />
+                <path d="M14 2v5a1 1 0 0 0 1 1h5" />
+                <path d="M12 12v6" />
+                <path d="m15 15-3-3-3 3" />
+              </svg></button
+            ><span class="caption" aria-hidden="true" data-i18n="uploadOpen"
+              >Open upload</span
+            >
+          </div>
+        </div>
+      </div>
+    </section>
+    <section
+      id="logs"
+      class="overlay"
+      role="dialog"
+      aria-modal="true"
+      aria-labelledby="logs-title"
+      hidden
+    >
+      <div class="panel" id="log-panel">
+        <h2 id="logs-title" data-i18n="logs">Logs</h2>
+        <pre id="log-output" data-i18n="loading">Loading…</pre>
+        <div class="panel-actions">
+          <div class="tool">
+            <button
+              id="refresh-logs"
+              class="icon-button"
+              data-i18n-aria="refreshLogs"
+              aria-label="Refresh logs"
+            >
+              <svg
+                class="icon"
+                aria-hidden="true"
+                focusable="false"
+                xmlns="http://www.w3.org/2000/svg"
+                width="24"
+                height="24"
+                viewBox="0 0 24 24"
+                fill="none"
+                stroke="currentColor"
+                stroke-width="2"
+                stroke-linecap="round"
+                stroke-linejoin="round"
+              >
+                <path d="M3 12a9 9 0 0 1 9-9 9.75 9.75 0 0 1 6.74 2.74L21 8" />
+                <path d="M21 3v5h-5" />
+                <path d="M21 12a9 9 0 0 1-9 9 9.75 9.75 0 0 1-6.74-2.74L3 16" />
+                <path d="M8 16H3v5" />
+              </svg></button
+            ><span class="caption" aria-hidden="true" data-i18n="refresh"
+              >Refresh</span
+            >
+          </div>
+          <div class="tool">
+            <button
+              id="logs-back"
+              class="icon-button"
+              data-i18n-aria="back"
+              aria-label="Back"
+            >
+              <svg
+                class="icon"
+                aria-hidden="true"
+                focusable="false"
+                xmlns="http://www.w3.org/2000/svg"
+                width="24"
+                height="24"
+                viewBox="0 0 24 24"
+                fill="none"
+                stroke="currentColor"
+                stroke-width="2"
+                stroke-linecap="round"
+                stroke-linejoin="round"
+              >
+                <path d="m15 18-6-6 6-6" />
+              </svg></button
+            ><span class="caption" aria-hidden="true" data-i18n="back"
+              >Back</span
+            >
+          </div>
+        </div>
+      </div>
+    </section>
+    <section
+      id="settings"
+      class="overlay"
+      role="dialog"
+      aria-modal="true"
+      aria-labelledby="settings-title"
+      hidden
+    >
+      <div class="panel">
+        <h2 id="settings-title" data-i18n="settings">Settings</h2>
+        <button
+          id="autostart"
+          class="setting-row"
+          role="switch"
+          aria-checked="false"
+        >
+          <span data-i18n="startup">Connect on device startup</span
+          ><span class="switch" aria-hidden="true"></span>
+        </button>
+        <button id="routing" class="setting-row">
+          <span data-i18n="routingMenu">Routing</span
+          ><span id="routing-value" class="language-value"></span>
+        </button>
+        <button id="language" class="setting-row">
+          <span data-i18n="language">Language</span
+          ><span id="language-value" class="language-value">English</span>
+        </button>
+        <p id="settings-notice" role="status"></p>
+        <div class="panel-actions">
+          <div class="tool">
+            <button
+              id="settings-back"
+              class="icon-button"
+              data-i18n-aria="back"
+              aria-label="Back"
+            >
+              <svg
+                class="icon"
+                aria-hidden="true"
+                focusable="false"
+                xmlns="http://www.w3.org/2000/svg"
+                width="24"
+                height="24"
+                viewBox="0 0 24 24"
+                fill="none"
+                stroke="currentColor"
+                stroke-width="2"
+                stroke-linecap="round"
+                stroke-linejoin="round"
+              >
+                <path d="m15 18-6-6 6-6" />
+              </svg></button
+            ><span class="caption" aria-hidden="true" data-i18n="back"
+              >Back</span
+            >
+          </div>
+        </div>
+      </div>
+    </section>
+    <section
+      id="routing-screen"
+      class="overlay"
+      role="dialog"
+      aria-modal="true"
+      aria-labelledby="routing-title"
+      hidden
+    >
+      <div class="panel">
+        <h2 id="routing-title" data-i18n="routingMenu">Routing</h2>
+        <div role="radiogroup" data-i18n-aria="routingMenu">
+          <button
+            id="mode-all"
+            class="setting-row route-choice"
+            role="radio"
+            aria-checked="false"
+          >
+            <span class="choice-text"
+              ><span data-i18n="routeAll"></span
+              ><span
+                class="choice-detail"
+                data-i18n="routeAllDetail"
+              ></span></span
+            ><span class="radio-dot" aria-hidden="true"></span></button
+          ><button
+            id="mode-exclude"
+            class="setting-row route-choice"
+            role="radio"
+            aria-checked="false"
+          >
+            <span class="choice-text"
+              ><span data-i18n="routeExclude"></span
+              ><span
+                class="choice-detail"
+                data-i18n="routeExcludeDetail"
+              ></span></span
+            ><span class="radio-dot" aria-hidden="true"></span></button
+          ><button
+            id="mode-include"
+            class="setting-row route-choice"
+            role="radio"
+            aria-checked="false"
+          >
+            <span class="choice-text"
+              ><span data-i18n="routeInclude"></span
+              ><span
+                class="choice-detail"
+                data-i18n="routeIncludeDetail"
+              ></span></span
+            ><span class="radio-dot" aria-hidden="true"></span>
+          </button>
+        </div>
+        <div id="routing-info" class="routing-info" hidden>
+          <span id="routing-summary"></span
+          ><button
+            id="routing-refresh"
+            class="icon-button"
+            data-i18n-aria="routingRefresh"
+            aria-label="Update subnet list"
+          >
+            <svg
+              class="icon"
+              aria-hidden="true"
+              focusable="false"
+              xmlns="http://www.w3.org/2000/svg"
+              width="24"
+              height="24"
+              viewBox="0 0 24 24"
+              fill="none"
+              stroke="currentColor"
+              stroke-width="2"
+              stroke-linecap="round"
+              stroke-linejoin="round"
+            >
+              <path d="M3 12a9 9 0 0 1 9-9 9.75 9.75 0 0 1 6.74 2.74L21 8" />
+              <path d="M21 3v5h-5" />
+              <path d="M21 12a9 9 0 0 1-9 9 9.75 9.75 0 0 1-6.74-2.74L3 16" />
+              <path d="M8 16H3v5" />
+            </svg>
+          </button>
+        </div>
+        <p id="routing-notice" role="status"></p>
+        <div class="panel-actions">
+          <div class="tool">
+            <button
+              id="edit-lists"
+              class="icon-button"
+              data-i18n-aria="editLists"
+            >
+              <svg
+                class="icon"
+                aria-hidden="true"
+                focusable="false"
+                xmlns="http://www.w3.org/2000/svg"
+                width="24"
+                height="24"
+                viewBox="0 0 24 24"
+                fill="none"
+                stroke="currentColor"
+                stroke-width="2"
+                stroke-linecap="round"
+                stroke-linejoin="round"
+              >
+                <path
+                  d="M6 22a2 2 0 0 1-2-2V4a2 2 0 0 1 2-2h8a2.4 2.4 0 0 1 1.704.706l3.588 3.588A2.4 2.4 0 0 1 20 8v12a2 2 0 0 1-2 2z"
+                />
+                <path d="M14 2v5a1 1 0 0 0 1 1h5" />
+                <path d="M12 12v6" />
+                <path d="m15 15-3-3-3 3" />
+              </svg></button
+            ><span class="caption" data-i18n="editLists"></span>
+          </div>
+          <div class="tool">
+            <button id="routing-back" class="icon-button" data-i18n-aria="back">
+              <svg
+                class="icon"
+                aria-hidden="true"
+                focusable="false"
+                xmlns="http://www.w3.org/2000/svg"
+                width="24"
+                height="24"
+                viewBox="0 0 24 24"
+                fill="none"
+                stroke="currentColor"
+                stroke-width="2"
+                stroke-linecap="round"
+                stroke-linejoin="round"
+              >
+                <path d="m15 18-6-6 6-6" />
+              </svg></button
+            ><span class="caption" data-i18n="back"></span>
+          </div>
+        </div>
+      </div>
+    </section>
+    <script src="app.js"></script>
+  </body>
+</html>

@@ -3,6 +3,7 @@ package main
 
 import (
 	"bytes"
+	"context"
 	"encoding/json"
 	"fmt"
 	"io"
@@ -13,6 +14,7 @@ import (
 	"os"
 	"regexp"
 	"strconv"
+	"strings"
 	"time"
 )
 
@@ -26,6 +28,8 @@ type policy struct {
 }
 
 func run() error {
+	ctx, cancel := context.WithTimeout(context.Background(), 90*time.Second)
+	defer cancel()
 	if len(os.Args) != 2 {
 		return fmt.Errorf("expected synthetic policy JSON file")
 	}
@@ -51,14 +55,23 @@ func run() error {
 	}
 	client := &http.Client{Jar: jar, Timeout: 70 * time.Second}
 	origin := "http://" + state.Host
-	response, err := client.PostForm(origin+"/login", url.Values{"code": {state.Code}})
+	login, err := http.NewRequestWithContext(ctx, http.MethodPost, origin+"/login", strings.NewReader(url.Values{"code": {state.Code}}.Encode()))
+	if err != nil {
+		return err
+	}
+	login.Header.Set("Content-Type", "application/x-www-form-urlencoded")
+	response, err := client.Do(login)
 	if err != nil {
 		return err
 	}
 	if err := response.Body.Close(); err != nil {
 		return err
 	}
-	response, err = client.Get(origin + "/routing")
+	listing, err := http.NewRequestWithContext(ctx, http.MethodGet, origin+"/routing", nil)
+	if err != nil {
+		return err
+	}
+	response, err = client.Do(listing)
 	if err != nil {
 		return err
 	}
@@ -103,7 +116,7 @@ func run() error {
 	if err := writer.Close(); err != nil {
 		return err
 	}
-	request, err := http.NewRequest("POST", origin+"/routing", &body)
+	request, err := http.NewRequestWithContext(ctx, "POST", origin+"/routing", &body)
 	if err != nil {
 		return err
 	}
@@ -127,6 +140,7 @@ func run() error {
 	fmt.Println("PASS: authenticated LAN policy saved")
 	return nil
 }
+
 func main() {
 	if err := run(); err != nil {
 		fmt.Fprintln(os.Stderr, err)

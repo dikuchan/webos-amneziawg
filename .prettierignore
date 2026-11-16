@@ -1,0 +1,8 @@
+dependencies/
+.build/
+dist/
+node_modules/
+bun.lock
+web/assets/
+presets/
+*.md

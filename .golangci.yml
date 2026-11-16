@@ -1,0 +1,34 @@
+version: "2"
+run:
+  timeout: 3m
+linters:
+  default: none
+  enable:
+    - bodyclose
+    - errcheck
+    - errorlint
+    - exhaustive
+    - govet
+    - ineffassign
+    - noctx
+    - staticcheck
+    - unused
+  settings:
+    errcheck:
+      check-blank: true
+      check-type-assertions: true
+    exhaustive:
+      default-signifies-exhaustive: true
+  exclusions:
+    presets: []
+    paths:
+      - ^dependencies/
+      - ^node_modules/
+formatters:
+  enable:
+    - gofumpt
+    - goimports
+  exclusions:
+    paths:
+      - ^dependencies/
+      - ^node_modules/

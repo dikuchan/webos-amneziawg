@@ -11,31 +11,31 @@ NETWORK=
 SERVER=
 CLIENT=
 cleanup() {
-    if [ -n "$CLIENT" ]; then "$DOCKER" rm -f "$CLIENT" >/dev/null; fi
-    if [ -n "$SERVER" ]; then "$DOCKER" rm -f "$SERVER" >/dev/null; fi
-    if [ -n "$NETWORK" ]; then "$DOCKER" network rm "$NETWORK" >/dev/null; fi
-    rm -rf "$WORK"
+  if [ -n "$CLIENT" ]; then "$DOCKER" rm -f "$CLIENT" >/dev/null; fi
+  if [ -n "$SERVER" ]; then "$DOCKER" rm -f "$SERVER" >/dev/null; fi
+  if [ -n "$NETWORK" ]; then "$DOCKER" network rm "$NETWORK" >/dev/null; fi
+  rm -rf "$WORK"
 }
 trap cleanup EXIT HUP INT TERM
 cd "$ROOT"
 for component in fixture lan-client; do
-    GOOS=linux GOARCH=arm64 CGO_ENABLED=0 "$GO_BIN" build -trimpath -o "test-bin/$component" "./tests/$component"
+  GOOS=linux GOARCH=arm64 CGO_ENABLED=0 "$GO_BIN" build -trimpath -o ".build/arm64/bin/$component" "./tests/$component"
 done
-for component in awg amneziawg-go amneziawgctl; do test -x "test-bin/$component"; done
+for component in awg amneziawg-go amneziawgctl; do test -x ".build/arm64/bin/$component"; done
 NETWORK=$("$DOCKER" network create --internal --subnet 172.31.222.0/24 "awg-routing-$$")
 SERVER=$("$DOCKER" create --pull never --platform linux/arm64 --network "$NETWORK" --ip 172.31.222.2 --cap-add NET_ADMIN --device /dev/net/tun --sysctl net.ipv6.conf.all.disable_ipv6=1 --sysctl net.ipv6.conf.default.disable_ipv6=1 "$IMAGE" sleep infinity)
 CLIENT=$("$DOCKER" create --pull never --platform linux/arm64 --network "$NETWORK" --ip 172.31.222.3 --cap-add NET_ADMIN --device /dev/net/tun --sysctl net.ipv6.conf.all.disable_ipv6=1 --sysctl net.ipv6.conf.default.disable_ipv6=1 "$IMAGE" sleep infinity)
 "$DOCKER" start "$SERVER" "$CLIENT" >/dev/null
-"$DOCKER" exec "$SERVER" mkdir -p /source/test-bin /source/tests
+"$DOCKER" exec "$SERVER" mkdir -p /source/.build/arm64/bin /source/tests
 "$DOCKER" exec "$CLIENT" mkdir -p /tmp/amneziawg-kit/bin /tmp/amneziawg-kit/scripts
 for component in awg amneziawg-go amneziawgctl; do
-    "$DOCKER" cp "test-bin/$component" "$SERVER:/source/test-bin/$component"
-    "$DOCKER" cp "test-bin/$component" "$CLIENT:/tmp/amneziawg-kit/bin/$component"
+  "$DOCKER" cp ".build/arm64/bin/$component" "$SERVER:/source/.build/arm64/bin/$component"
+  "$DOCKER" cp ".build/arm64/bin/$component" "$CLIENT:/tmp/amneziawg-kit/bin/$component"
 done
 "$DOCKER" cp tests/server.sh "$SERVER:/source/tests/server.sh"
-"$DOCKER" cp test-bin/fixture "$SERVER:/tmp/fixture"
-"$DOCKER" cp test-bin/lan-client "$CLIENT:/tmp/lan-client"
-"$DOCKER" cp kit/scripts/. "$CLIENT:/tmp/amneziawg-kit/scripts/"
+"$DOCKER" cp .build/arm64/bin/fixture "$SERVER:/tmp/fixture"
+"$DOCKER" cp .build/arm64/bin/lan-client "$CLIENT:/tmp/lan-client"
+"$DOCKER" cp packaging/. "$CLIENT:/tmp/amneziawg-kit/scripts/"
 "$DOCKER" exec "$SERVER" sh /source/tests/server.sh
 "$DOCKER" exec "$SERVER" sh -ec 'ip addr add 5.45.192.1/32 dev lo; ip addr add 203.0.113.1/32 dev lo; ip addr add 203.0.113.2/32 dev lo; mkdir -p /tmp/awg-feed; printf "203.0.113.1/32\n" > /tmp/awg-feed/rules.txt'
 "$DOCKER" exec -d "$SERVER" /tmp/fixture
@@ -43,23 +43,25 @@ done
 # Wait for the fixture to create its CA, without disabling TLS verification.
 attempt=0
 until "$DOCKER" cp "$SERVER:/tmp/awg-feed/ca.pem" "$WORK/ca.pem" 2>/dev/null; do
-    attempt=$((attempt+1)); test "$attempt" -lt 30; sleep 0.1
+  attempt=$((attempt + 1))
+  test "$attempt" -lt 30
+  sleep 0.1
 done
 "$DOCKER" cp "$WORK/client.conf" "$CLIENT:/tmp/client.conf"
 "$DOCKER" cp "$WORK/ca.pem" "$CLIENT:/tmp/feed-ca.pem"
-cat > "$WORK/clear.json" <<'JSON'
+cat >"$WORK/clear.json" <<'JSON'
 {"Mode":"all","Sources":[]}
 JSON
-cat > "$WORK/remote.json" <<'JSON'
+cat >"$WORK/remote.json" <<'JSON'
 {"Mode":"include","Sources":[{"ID":"remote-one","Kind":"url","URL":"https://5.45.192.1:8443/rules.txt","Checksum":"https://5.45.192.1:8443/rules.sha256","Hours":6}]}
 JSON
-cat > "$WORK/multiple.json" <<'JSON'
+cat >"$WORK/multiple.json" <<'JSON'
 {"Mode":"exclude","Sources":[{"ID":"one","Kind":"file","Text":"203.0.113.1/32\n"},{"ID":"two","Kind":"url","URL":"https://5.45.192.1:8443/rules.txt","Hours":12},{"ID":"three","Kind":"url","URL":"https://5.45.192.1:8443/rules.txt","Checksum":"https://5.45.192.1:8443/rules.sha256","Hours":48}]}
 JSON
-cat > "$WORK/everything.json" <<'JSON'
+cat >"$WORK/everything.json" <<'JSON'
 {"Mode":"exclude","Sources":[{"ID":"all","Kind":"file","Text":"0.0.0.0/0\n"}]}
 JSON
-cat > "$WORK/conflict.json" <<'JSON'
+cat >"$WORK/conflict.json" <<'JSON'
 {"Mode":"exclude","Sources":[{"ID":"collision","Kind":"file","Text":"203.0.113.0/24\n"}]}
 JSON
 "$DOCKER" cp "$WORK/." "$CLIENT:/tmp/policies"
