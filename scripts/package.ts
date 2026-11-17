@@ -31,7 +31,7 @@ for (const [source, name] of [
   ["dependencies/amneziawg-go/LICENSE", "amneziawg-go-MIT.txt"],
   ["dependencies/amneziawg-tools/COPYING", "amneziawg-tools-GPL-2.0.txt"],
   ["dependencies/musl/COPYRIGHT", "musl-COPYRIGHT.txt"],
-  ["presets/LICENSE", "ru-direct-MIT.txt"],
+  ["app/presets/LICENSE", "ru-direct-MIT.txt"],
   ["web/assets/AMNEZIA-LICENSE", "amnezia-client-GPL-3.0.txt"],
   ["web/assets/icons/LICENSE", "lucide-ISC.txt"],
   ["web/assets/fonts/Inter-OFL.txt", "Inter-OFL.txt"],

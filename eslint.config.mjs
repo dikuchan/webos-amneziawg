@@ -2,7 +2,13 @@ import { defineConfig, globalIgnores } from "eslint/config";
 import tseslint from "typescript-eslint";
 
 export default defineConfig([
-  globalIgnores(["dependencies/**", ".build/**", "dist/**", "node_modules/**"]),
+  globalIgnores([
+    "dependencies/**",
+    ".build/**",
+    "app/.build/**",
+    "dist/**",
+    "node_modules/**",
+  ]),
   ...tseslint.configs.strictTypeChecked.map((configuration) => ({
     ...configuration,
     files: ["**/*.ts"],

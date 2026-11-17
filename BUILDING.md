@@ -39,7 +39,16 @@ This builds the current sources and writes:
 
 `VERSION` is the single application version. It supplies the controller's version, generated app metadata and artifact filenames. `packaging/appinfo.json` is a template.
 
-Intermediate files go into `.build/`; build and package output is ignored by Git. C compiler output is saved in `.build/builder.log` and `.build/awg-build.log`.
+Intermediate files go into `.build/`; the frontend build also stages embedded LAN resources in `app/.build/lan`. Both directories are ignored by Git. C compiler output is saved in `.build/builder.log` and `.build/awg-build.log`.
+
+## Source layout
+
+- `app/`: Go controller and unit tests; embedded routing data in `app/presets/`.
+- `web/`: TV interface and LAN editor sources.
+- `tests/`: integration tests and stand utilities.
+- `packaging/` and `scripts/`: TV scripts, build and packaging tools.
+
+`go.mod` stays at the repository root. Run Go tests with `go test ./app ./tests/...` after `make ui`, which prepares the embedded LAN resources. `make check` handles this automatically.
 
 ## Target architecture
 

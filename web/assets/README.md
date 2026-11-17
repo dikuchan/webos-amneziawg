@@ -35,5 +35,5 @@ Font files are unmodified. Their combined size is 317996 bytes.
 
 RU Direct Standard IPv4 list: https://github.com/kyoresuas/ru-direct
 Bundled release commit: `7e14508232595bac5881aa25d31202843a3f6021`.
-The list and its manifest are embedded in the controller. MIT license: `presets/LICENSE`.
+The list and its manifest are embedded in the controller. MIT license: `app/presets/LICENSE`.
 Automatic updates use the project's release branch via GitHub or jsDelivr.

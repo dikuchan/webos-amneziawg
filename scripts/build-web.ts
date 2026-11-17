@@ -22,3 +22,11 @@ for (const name of ["index.html", "app.css", "assets"]) {
     recursive: true,
   });
 }
+
+// Go embeds the LAN editor from its package directory.
+const lan = resolve(root, "app/.build/lan");
+await mkdir(lan, { recursive: true });
+for (const name of ["admin.html", "admin.css"]) {
+  await cp(resolve(root, "web", name), resolve(lan, name));
+}
+await cp(resolve(output, "admin.js"), resolve(lan, "admin.js"));

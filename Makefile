@@ -1,7 +1,7 @@
 GO_BIN ?= go
 BUN ?= bun
 TOOLS := $(CURDIR)/.build/tools
-GO_PACKAGES := . ./tests/...
+GO_PACKAGES := ./app ./tests/...
 export PATH := $(TOOLS):$(PATH)
 export GO_BIN BUN
 .NOTPARALLEL:

@@ -1,8 +1,9 @@
 dependencies/
 .build/
+app/.build/
 dist/
 node_modules/
 bun.lock
 web/assets/
-presets/
+app/presets/
 *.md

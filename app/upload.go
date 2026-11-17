@@ -130,13 +130,13 @@ func lanText(lang, key string) string {
 	return values[0]
 }
 
-//go:embed web/admin.html
+//go:embed .build/lan/admin.html
 var lanHTML string
 
-//go:embed .build/web/admin.js
+//go:embed .build/lan/admin.js
 var lanJS []byte
 
-//go:embed web/admin.css
+//go:embed .build/lan/admin.css
 var lanCSS []byte
 var lanPage = template.Must(template.New("lan").Parse(lanHTML))
 

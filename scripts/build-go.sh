@@ -27,7 +27,7 @@ for arch in armv7 arm64; do
   export GOARCH GOARM
   OUTPUT="$ROOT/.build/$arch/bin"
   mkdir -p "$OUTPUT"
-  GOOS=linux CGO_ENABLED=0 "$GO_BIN" build -trimpath -ldflags="-s -w -X main.version=$VERSION" -o "$OUTPUT/amneziawgctl" .
+  GOOS=linux CGO_ENABLED=0 "$GO_BIN" build -trimpath -ldflags="-s -w -X main.version=$VERSION" -o "$OUTPUT/amneziawgctl" ./app
   (
     cd "$SOURCE"
     GOOS=linux CGO_ENABLED=0 "$GO_BIN" build -buildvcs=false -trimpath -ldflags='-s -w' -o "$OUTPUT/amneziawg-go" .
