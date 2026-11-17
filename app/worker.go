@@ -79,11 +79,19 @@ func startWorker(kit string, kind workerKind) error {
 	// The saved identity owns this detached worker until Stop or its own deadline.
 	child := exec.CommandContext(context.Background(), binary, string(kind))
 	child.Stdin, child.Stdout, child.Stderr = null, null, null
-	child.SysProcAttr = &syscall.SysProcAttr{Setsid: true}
+	child.SysProcAttr = &syscall.SysProcAttr{
+		Setsid: true,
+	}
 	if err := child.Start(); err != nil {
 		return errors.New("cannot start auxiliary worker")
 	}
-	state := workerIdentity{BootID: id, PID: child.Process.Pid, Started: processStart(child.Process.Pid), Binary: binary, Kind: kind}
+	state := workerIdentity{
+		BootID:  id,
+		PID:     child.Process.Pid,
+		Started: processStart(child.Process.Pid),
+		Binary:  binary,
+		Kind:    kind,
+	}
 	raw, err := json.Marshal(state)
 	if err == nil {
 		err = atomicWrite(workerPath(kind), raw)

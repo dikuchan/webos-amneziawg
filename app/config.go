@@ -158,7 +158,9 @@ func validateProtocol(s setting) error {
 }
 
 func parseConfig(input []byte) (candidateConfig, error) {
-	c := candidateConfig{MTU: 1280}
+	c := candidateConfig{
+		MTU: 1280,
+	}
 	if len(input) > maxConfigBytes {
 		return c, errors.New("config exceeds 64 KiB")
 	}
@@ -206,7 +208,10 @@ func parseConfig(input []byte) (candidateConfig, error) {
 			return c, fmt.Errorf("duplicate %s", key)
 		}
 		seen[key] = value
-		s := setting{key, value}
+		s := setting{
+			key,
+			value,
+		}
 		switch key {
 		case "AdvancedSecurity":
 			return c, errors.New("AdvancedSecurity is a kernel-only peer switch, unsupported by official userspace awg; export a userspace AWG config")
@@ -294,7 +299,12 @@ func parseConfig(input []byte) (candidateConfig, error) {
 		}
 	}
 	if seen["HeaderProtectionKey"] != "" {
-		for _, key := range []string{"S1", "S2", "S3", "S4"} {
+		for _, key := range []string{
+			"S1",
+			"S2",
+			"S3",
+			"S4",
+		} {
 			n, err := strconv.ParseUint(seen[key], 10, 32)
 			if err != nil || n < 12 {
 				return c, fmt.Errorf("header protection requires %s >= 12", key)
@@ -302,7 +312,11 @@ func parseConfig(input []byte) (candidateConfig, error) {
 		}
 		c.Features = append(c.Features, "header-protection")
 	}
-	for _, key := range []string{"ContentPaddingAddition", "RandomTrailers", "DisableCookies"} {
+	for _, key := range []string{
+		"ContentPaddingAddition",
+		"RandomTrailers",
+		"DisableCookies",
+	} {
 		if v := seen[key]; v != "" && !strings.EqualFold(v, "off") && v != "0" && v != "0-0" {
 			c.Features = append(c.Features, key)
 		}

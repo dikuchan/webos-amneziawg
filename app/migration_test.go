@@ -9,13 +9,29 @@ import (
 func migrationFixture(t *testing.T) migrationLayout {
 	t.Helper()
 	root := t.TempDir()
-	m := migrationLayout{Legacy: filepath.Join(root, "legacy"), Current: filepath.Join(root, "current"), OldHook: filepath.Join(root, "75-old"), NewHook: filepath.Join(root, "75-new"), OldScript: filepath.Join(root, "old-boot.sh"), NewScript: filepath.Join(root, "new-boot.sh"), BootID: "test-boot"}
-	for _, dir := range []string{m.Legacy + "/conf", m.Legacy + "/run", m.Current + "/conf", m.Current + "/run"} {
+	m := migrationLayout{
+		Legacy:    filepath.Join(root, "legacy"),
+		Current:   filepath.Join(root, "current"),
+		OldHook:   filepath.Join(root, "75-old"),
+		NewHook:   filepath.Join(root, "75-new"),
+		OldScript: filepath.Join(root, "old-boot.sh"),
+		NewScript: filepath.Join(root, "new-boot.sh"),
+		BootID:    "test-boot",
+	}
+	for _, dir := range []string{
+		m.Legacy + "/conf",
+		m.Legacy + "/run",
+		m.Current + "/conf",
+		m.Current + "/run",
+	} {
 		if err := os.MkdirAll(dir, 0o700); err != nil {
 			t.Fatal(err)
 		}
 	}
-	for _, script := range []string{m.OldScript, m.NewScript} {
+	for _, script := range []string{
+		m.OldScript,
+		m.NewScript,
+	} {
 		if err := os.WriteFile(script, []byte("#!/bin/sh\n"), 0o700); err != nil {
 			t.Fatal(err)
 		}

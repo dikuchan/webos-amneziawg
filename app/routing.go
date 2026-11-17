@@ -125,7 +125,10 @@ func applyManagedSession(ctx context.Context, next *managedSession) error {
 		return err
 	}
 	union := routeSet(append(append([]managedRoute(nil), owned...), desired...))
-	journal := &managedSession{BootID: id, Phase: routesApplying}
+	journal := &managedSession{
+		BootID: id,
+		Phase:  routesApplying,
+	}
 	for r := range union {
 		journal.Routes = append(journal.Routes, r)
 	}
@@ -170,7 +173,9 @@ func inspectPhysicalNetwork(ctx context.Context) (physicalNetwork, error) {
 	if err != nil {
 		return physicalNetwork{}, err
 	}
-	network := physicalNetwork{Index: device.Index}
+	network := physicalNetwork{
+		Index: device.Index,
+	}
 	if value := fieldAfter(text, "via"); value != "" {
 		network.Gateway, err = netip.ParseAddr(value)
 		if err != nil || !network.Gateway.Is4() {
@@ -236,7 +241,10 @@ func applyDocumentRoutes(ctx context.Context, d routingDocument) error {
 	if err != nil {
 		return err
 	}
-	next := &managedSession{Revision: dataRevision(d), Data: data}
+	next := &managedSession{
+		Revision: dataRevision(d),
+		Data:     data,
+	}
 	if old != nil && ownerAlive(old.Owner) {
 		next.Control = old.Control
 		next.Owner = old.Owner
@@ -320,7 +328,10 @@ func applyBootstrapRouting(ctx context.Context) error {
 	if err != nil {
 		return err
 	}
-	return applyManagedSession(ctx, &managedSession{Revision: "bootstrap", Data: data})
+	return applyManagedSession(ctx, &managedSession{
+		Revision: "bootstrap",
+		Data:     data,
+	})
 }
 
 func routingNeedsRecovery() bool {
@@ -353,7 +364,10 @@ func prepareDownloadRoutes(ctx context.Context, ips []netip.Addr) (*routeOwner, 
 		if err != nil {
 			return err
 		}
-		owner = &routeOwner{PID: os.Getpid(), Started: processStart(os.Getpid())}
+		owner = &routeOwner{
+			PID:     os.Getpid(),
+			Started: processStart(os.Getpid()),
+		}
 		next := *state
 		next.Owner = owner
 		next.Control = nil
@@ -361,7 +375,10 @@ func prepareDownloadRoutes(ctx context.Context, ips []netip.Addr) (*routeOwner, 
 			if ip.IsPrivate() || ip.IsLoopback() || !ip.IsGlobalUnicast() {
 				continue
 			}
-			next.Control = append(next.Control, managedRoute{Prefix: netip.PrefixFrom(ip, 32), Interface: index})
+			next.Control = append(next.Control, managedRoute{
+				Prefix:    netip.PrefixFrom(ip, 32),
+				Interface: index,
+			})
 		}
 		return applyManagedSession(ctx, &next)
 	})

@@ -53,9 +53,16 @@ func run() error {
 	if err != nil {
 		return err
 	}
-	client := &http.Client{Jar: jar, Timeout: 70 * time.Second}
+	client := &http.Client{
+		Jar:     jar,
+		Timeout: 70 * time.Second,
+	}
 	origin := "http://" + state.Host
-	login, err := http.NewRequestWithContext(ctx, http.MethodPost, origin+"/login", strings.NewReader(url.Values{"code": {state.Code}}.Encode()))
+	login, err := http.NewRequestWithContext(ctx, http.MethodPost, origin+"/login", strings.NewReader(url.Values{
+		"code": {
+			state.Code,
+		},
+	}.Encode()))
 	if err != nil {
 		return err
 	}
@@ -89,7 +96,10 @@ func run() error {
 	}
 	var body bytes.Buffer
 	writer := multipart.NewWriter(&body)
-	fields := map[string]string{"mode": desired.Mode, "revision": string(match[1])}
+	fields := map[string]string{
+		"mode":     desired.Mode,
+		"revision": string(match[1]),
+	}
 	for i, s := range desired.Sources {
 		n := strconv.Itoa(i)
 		fields["id-"+n] = s.ID

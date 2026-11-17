@@ -32,7 +32,9 @@ func openRouteSocket() (*routeSocket, error) {
 		return nil, err
 	}
 	fail := func(err error) (*routeSocket, error) { return nil, errors.Join(err, syscall.Close(fd)) }
-	if err := syscall.Bind(fd, &syscall.SockaddrNetlink{Family: syscall.AF_NETLINK}); err != nil {
+	if err := syscall.Bind(fd, &syscall.SockaddrNetlink{
+		Family: syscall.AF_NETLINK,
+	}); err != nil {
 		return fail(err)
 	}
 	timeout := syscall.NsecToTimeval((250 * time.Millisecond).Nanoseconds())
@@ -42,7 +44,9 @@ func openRouteSocket() (*routeSocket, error) {
 	if err := syscall.SetsockoptTimeval(fd, syscall.SOL_SOCKET, syscall.SO_SNDTIMEO, &timeout); err != nil {
 		return fail(err)
 	}
-	return &routeSocket{fd: fd}, nil
+	return &routeSocket{
+		fd: fd,
+	}, nil
 }
 
 func (socket *routeSocket) packet(kind, flags uint16, body []byte) ([]byte, uint32) {
@@ -88,7 +92,9 @@ func kernelManagedRoutes(ctx context.Context) ([]managedRoute, error) {
 	body := make([]byte, 12)
 	body[0] = syscall.AF_INET
 	request, sequence := socket.packet(syscall.RTM_GETROUTE, syscall.NLM_F_REQUEST|syscall.NLM_F_DUMP, body)
-	if err := syscall.Sendto(socket.fd, request, 0, &syscall.SockaddrNetlink{Family: syscall.AF_NETLINK}); err != nil {
+	if err := syscall.Sendto(socket.fd, request, 0, &syscall.SockaddrNetlink{
+		Family: syscall.AF_NETLINK,
+	}); err != nil {
 		return nil, err
 	}
 	var result []managedRoute
@@ -149,7 +155,11 @@ func kernelManagedRoutes(ctx context.Context) ([]managedRoute, error) {
 			if table != syscall.RT_TABLE_MAIN || metric != splitRouteMetric || index == 0 || data[1] > 32 {
 				continue
 			}
-			result = append(result, managedRoute{netip.PrefixFrom(address, int(data[1])).Masked(), int(index), gateway})
+			result = append(result, managedRoute{
+				netip.PrefixFrom(address, int(data[1])).Masked(),
+				int(index),
+				gateway,
+			})
 		}
 	}
 	return nil, errors.New("kernel route dump did not terminate")
@@ -221,12 +231,19 @@ func mutateManagedRoutes(ctx context.Context, add, remove []managedRoute) error 
 			flags = syscall.NLM_F_CREATE | syscall.NLM_F_REPLACE
 			replaced[old] = struct{}{}
 		}
-		operations = append(operations, routeMutation{Kind: syscall.RTM_NEWROUTE, Flags: flags, Route: r})
+		operations = append(operations, routeMutation{
+			Kind:  syscall.RTM_NEWROUTE,
+			Flags: flags,
+			Route: r,
+		})
 	}
 	addCount := len(operations)
 	for _, r := range remove {
 		if _, ok := replaced[r]; !ok {
-			operations = append(operations, routeMutation{Kind: syscall.RTM_DELROUTE, Route: r})
+			operations = append(operations, routeMutation{
+				Kind:  syscall.RTM_DELROUTE,
+				Route: r,
+			})
 		}
 	}
 	for first := 0; first < len(operations); {
@@ -249,7 +266,9 @@ func mutateManagedRoutes(ctx context.Context, add, remove []managedRoute) error 
 			packet = append(packet, raw...)
 			waiting[seq] = operation.Kind
 		}
-		if err := syscall.Sendto(socket.fd, packet, 0, &syscall.SockaddrNetlink{Family: syscall.AF_NETLINK}); err != nil {
+		if err := syscall.Sendto(socket.fd, packet, 0, &syscall.SockaddrNetlink{
+			Family: syscall.AF_NETLINK,
+		}); err != nil {
 			return err
 		}
 		for len(waiting) > 0 {

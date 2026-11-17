@@ -14,16 +14,31 @@ import (
 )
 
 func testUploadOptions() uploadOptions {
-	return uploadOptions{Host: "192.168.0.64:8089", Code: "12345678", Token: strings.Repeat("a", 64), Language: "en", Expires: time.Date(2026, 11, 17, 1, 10, 0, 0, time.UTC), Now: func() time.Time { return time.Date(2026, 11, 17, 1, 0, 0, 0, time.UTC) }}
+	return uploadOptions{
+		Host:     "192.168.0.64:8089",
+		Code:     "12345678",
+		Token:    strings.Repeat("a", 64),
+		Language: "en",
+		Expires:  time.Date(2026, 11, 17, 1, 10, 0, 0, time.UTC),
+		Now:      func() time.Time { return time.Date(2026, 11, 17, 1, 0, 0, 0, time.UTC) },
+	}
 }
 
 func testLANBackend(t *testing.T, commit func([]byte, candidateConfig) error) lanBackend {
 	t.Helper()
-	return lanBackend{Load: defaultRoutingDocument, Save: func(context.Context, string, routingDocument) error { return nil }, Import: commit}
+	return lanBackend{
+		Load:   defaultRoutingDocument,
+		Save:   func(context.Context, string, routingDocument) error { return nil },
+		Import: commit,
+	}
 }
 
 func loginRequest(code string) *http.Request {
-	request := httptest.NewRequestWithContext(context.Background(), "POST", "http://192.168.0.64:8089/login", strings.NewReader(url.Values{"code": []string{code}}.Encode()))
+	request := httptest.NewRequestWithContext(context.Background(), "POST", "http://192.168.0.64:8089/login", strings.NewReader(url.Values{
+		"code": []string{
+			code,
+		},
+	}.Encode()))
 	request.Header.Set("Content-Type", "application/x-www-form-urlencoded")
 	request.Header.Set("Origin", "http://192.168.0.64:8089")
 	return request
@@ -120,7 +135,10 @@ func TestLANSessionRejectsForeignOriginAndLocksAfterFiveBadCodes(t *testing.T) {
 }
 
 func TestLANProfileValidationRunsBeforeMutation(t *testing.T) {
-	for _, input := range []string{"private-invalid-input", strings.Repeat("x", maxConfigBytes+1)} {
+	for _, input := range []string{
+		"private-invalid-input",
+		strings.Repeat("x", maxConfigBytes+1),
+	} {
 		handler := newLANHandler(testUploadOptions(), testLANBackend(t, func([]byte, candidateConfig) error { t.Fatal("invalid profile imported"); return nil }), func(uploadPhase) {})
 		cookie := loginLAN(t, handler)
 		request := profileRequest(t, input)
@@ -147,24 +165,36 @@ func TestLANExpiredSessionCannotBeReused(t *testing.T) {
 }
 
 func TestLANRoutingEditPreservesUploadedListsAcrossSettingsChanges(t *testing.T) {
-	current := routingDocument{Version: 1, Mode: modeAll}
-	backend := lanBackend{Load: func() (routingDocument, error) { return current, nil }, Save: func(_ context.Context, revision string, next routingDocument) error {
-		if revision != policyRevision(current) {
-			return errRoutingConflict
-		}
-		if _, err := documentPrefixes(next); err != nil {
-			return err
-		}
-		current = next
-		return nil
-	}}
+	current := routingDocument{
+		Version: 1,
+		Mode:    modeAll,
+	}
+	backend := lanBackend{
+		Load: func() (routingDocument, error) { return current, nil },
+		Save: func(_ context.Context, revision string, next routingDocument) error {
+			if revision != policyRevision(current) {
+				return errRoutingConflict
+			}
+			if _, err := documentPrefixes(next); err != nil {
+				return err
+			}
+			current = next
+			return nil
+		},
+	}
 	handler := newLANHandler(testUploadOptions(), backend, func(uploadPhase) {})
 	cookie := loginLAN(t, handler)
 	post := func(mode routingMode, upload string) *httptest.ResponseRecorder {
 		t.Helper()
 		var body bytes.Buffer
 		writer := multipart.NewWriter(&body)
-		for name, value := range map[string]string{"mode": string(mode), "revision": policyRevision(current), "kind-0": "file", "id-0": "local-one", "name-0": "Home list"} {
+		for name, value := range map[string]string{
+			"mode":     string(mode),
+			"revision": policyRevision(current),
+			"kind-0":   "file",
+			"id-0":     "local-one",
+			"name-0":   "Home list",
+		} {
 			if err := writer.WriteField(name, value); err != nil {
 				t.Fatal(err)
 			}
@@ -200,21 +230,32 @@ func TestLANRoutingEditPreservesUploadedListsAcrossSettingsChanges(t *testing.T)
 }
 
 func TestLANInvalidListCanBeCorrectedWithoutReloadingEditor(t *testing.T) {
-	current := routingDocument{Version: 1, Mode: modeAll}
-	backend := lanBackend{Load: func() (routingDocument, error) { return current, nil }, Save: func(_ context.Context, revision string, next routingDocument) error {
-		if revision != policyRevision(current) {
-			return errRoutingConflict
-		}
-		current = next
-		return nil
-	}}
+	current := routingDocument{
+		Version: 1,
+		Mode:    modeAll,
+	}
+	backend := lanBackend{
+		Load: func() (routingDocument, error) { return current, nil },
+		Save: func(_ context.Context, revision string, next routingDocument) error {
+			if revision != policyRevision(current) {
+				return errRoutingConflict
+			}
+			current = next
+			return nil
+		},
+	}
 	handler := newLANHandler(testUploadOptions(), backend, func(uploadPhase) {})
 	cookie := loginLAN(t, handler)
 	post := func(revision, content string) *httptest.ResponseRecorder {
 		t.Helper()
 		var body bytes.Buffer
 		writer := multipart.NewWriter(&body)
-		for name, value := range map[string]string{"mode": "include", "revision": revision, "kind-0": "file", "id-0": "local-one"} {
+		for name, value := range map[string]string{
+			"mode":     "include",
+			"revision": revision,
+			"kind-0":   "file",
+			"id-0":     "local-one",
+		} {
 			if err := writer.WriteField(name, value); err != nil {
 				t.Fatal(err)
 			}

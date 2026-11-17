@@ -47,13 +47,18 @@ func withUpdateLock(fn func() error) error {
 func sourceURLs(s sourceSpec) []string {
 	switch s.Kind {
 	case sourceRemote:
-		r := []string{s.URL}
+		r := []string{
+			s.URL,
+		}
 		if s.ChecksumURL != "" {
 			r = append(r, s.ChecksumURL)
 		}
 		return r
 	case sourceRU:
-		return []string{"https://raw.githubusercontent.com/kyoresuas/ru-direct/release/manifest.json", "https://cdn.jsdelivr.net/gh/kyoresuas/ru-direct@release/manifest.json"}
+		return []string{
+			"https://raw.githubusercontent.com/kyoresuas/ru-direct/release/manifest.json",
+			"https://cdn.jsdelivr.net/gh/kyoresuas/ru-direct@release/manifest.json",
+		}
 	default:
 		return nil
 	}
@@ -72,7 +77,9 @@ func resolveSourceHosts(ctx context.Context, sources []listSource) (map[string][
 	var all []netip.Addr
 	for host := range hosts {
 		lookup, cancel := context.WithTimeout(ctx, 4*time.Second)
-		ips, err := (&net.Resolver{PreferGo: true}).LookupNetIP(lookup, "ip4", host)
+		ips, err := (&net.Resolver{
+			PreferGo: true,
+		}).LookupNetIP(lookup, "ip4", host)
 		cancel()
 		if err != nil {
 			continue
@@ -92,24 +99,36 @@ func resolveSourceHosts(ctx context.Context, sources []listSource) (map[string][
 }
 
 func sourceHTTPClient(hosts map[string][]netip.Addr) (*http.Client, *http.Transport) {
-	dialer := &net.Dialer{Timeout: 4 * time.Second}
-	transport := &http.Transport{Proxy: nil, TLSHandshakeTimeout: 5 * time.Second, ResponseHeaderTimeout: 10 * time.Second, DisableKeepAlives: true, DialContext: func(ctx context.Context, _, address string) (net.Conn, error) {
-		host, port, err := net.SplitHostPort(address)
-		if err != nil {
-			return nil, errors.New("invalid source address")
-		}
-		for _, ip := range hosts[host] {
-			conn, err := dialer.DialContext(ctx, "tcp4", net.JoinHostPort(ip.String(), port))
-			if err == nil {
-				return conn, nil
+	dialer := &net.Dialer{
+		Timeout: 4 * time.Second,
+	}
+	transport := &http.Transport{
+		Proxy:                 nil,
+		TLSHandshakeTimeout:   5 * time.Second,
+		ResponseHeaderTimeout: 10 * time.Second,
+		DisableKeepAlives:     true,
+		DialContext: func(ctx context.Context, _, address string) (net.Conn, error) {
+			host, port, err := net.SplitHostPort(address)
+			if err != nil {
+				return nil, errors.New("invalid source address")
 			}
-			if ctx.Err() != nil {
-				break
+			for _, ip := range hosts[host] {
+				conn, err := dialer.DialContext(ctx, "tcp4", net.JoinHostPort(ip.String(), port))
+				if err == nil {
+					return conn, nil
+				}
+				if ctx.Err() != nil {
+					break
+				}
 			}
-		}
-		return nil, errors.New("source is unavailable")
-	}}
-	return &http.Client{Transport: transport, Timeout: 15 * time.Second, CheckRedirect: func(*http.Request, []*http.Request) error { return http.ErrUseLastResponse }}, transport
+			return nil, errors.New("source is unavailable")
+		},
+	}
+	return &http.Client{
+		Transport:     transport,
+		Timeout:       15 * time.Second,
+		CheckRedirect: func(*http.Request, []*http.Request) error { return http.ErrUseLastResponse },
+	}, transport
 }
 
 func fetchText(ctx context.Context, client *http.Client, address string, cache sourceCache) ([]byte, string, string, error) {
@@ -189,7 +208,10 @@ func downloadSource(ctx context.Context, client *http.Client, source listSource,
 	if source.Spec.Kind == sourceRU {
 		var dataset routingDataset
 		var err error
-		for _, origin := range []string{"https://raw.githubusercontent.com/kyoresuas/ru-direct/release", "https://cdn.jsdelivr.net/gh/kyoresuas/ru-direct@release"} {
+		for _, origin := range []string{
+			"https://raw.githubusercontent.com/kyoresuas/ru-direct/release",
+			"https://cdn.jsdelivr.net/gh/kyoresuas/ru-direct@release",
+		} {
 			dataset, err = downloadRoutingDataset(ctx, client, origin)
 			if err == nil || ctx.Err() != nil {
 				break
@@ -228,7 +250,15 @@ func downloadSource(ctx context.Context, client *http.Client, source listSource,
 			}
 		}
 	}
-	return sourceCache{Raw: raw, Hash: hash, ETag: etag, Modified: modified, Attempted: now, Checked: now, State: sourceReady}, nil
+	return sourceCache{
+		Raw:       raw,
+		Hash:      hash,
+		ETag:      etag,
+		Modified:  modified,
+		Attempted: now,
+		Checked:   now,
+		State:     sourceReady,
+	}, nil
 }
 
 func shouldRefreshSource(s listSource, invocation updateInvocation, now time.Time) bool {
@@ -306,7 +336,11 @@ func refreshDocument(ctx context.Context, d routingDocument, invocation updateIn
 			defer workers.Done()
 			for index := range jobs {
 				cache, err := downloadSource(batch, client, sources[index], now)
-				results <- result{index, cache, err}
+				results <- result{
+					index,
+					cache,
+					err,
+				}
 			}
 		}()
 	}

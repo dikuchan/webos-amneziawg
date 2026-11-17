@@ -140,7 +140,10 @@ func main() {
 					return fmt.Errorf("autostart requires enable or disable")
 				}
 			case "check":
-				for _, name := range []string{"amneziawg-go", "awg"} {
+				for _, name := range []string{
+					"amneziawg-go",
+					"awg",
+				} {
 					out, err := command(ctx, kit+"/bin/"+name, "--version")
 					if err != nil {
 						return err

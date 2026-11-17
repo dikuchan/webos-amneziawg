@@ -30,12 +30,25 @@ func TestProviderConfigPreservesAWG31AndMTU(t *testing.T) {
 	if c.MTU != 1360 || c.Addresses[0].String() != "10.203.7.2/32" || c.DNS[0].String() != "10.203.7.1" {
 		t.Fatal("provider network settings were lost")
 	}
-	for _, setting := range []string{"HeaderProtectionKey = ", "RandomTrailers = on", "DisableCookies = on", "ContentPaddingAddition = 0-64", "PersistentKeepalive = 20-30", "I1 = <b 0x01020304><r 12>", "Endpoint = 192.0.2.55:31820"} {
+	for _, setting := range []string{
+		"HeaderProtectionKey = ",
+		"RandomTrailers = on",
+		"DisableCookies = on",
+		"ContentPaddingAddition = 0-64",
+		"PersistentKeepalive = 20-30",
+		"I1 = <b 0x01020304><r 12>",
+		"Endpoint = 192.0.2.55:31820",
+	} {
 		if !strings.Contains(wire, setting) {
 			t.Errorf("lost protocol setting %q", setting)
 		}
 	}
-	for _, setting := range []string{"Address =", "DNS =", "MTU =", "vpn.example.test"} {
+	for _, setting := range []string{
+		"Address =",
+		"DNS =",
+		"MTU =",
+		"vpn.example.test",
+	} {
 		if strings.Contains(wire, setting) {
 			t.Errorf("network-only setting reached awg: %q", setting)
 		}
@@ -88,7 +101,10 @@ func TestProviderNumericSwitches(t *testing.T) {
 		t.Fatal(err)
 	}
 	wire := string(c.setconf("192.0.2.55:31820"))
-	for _, option := range []string{"RandomTrailers = 1", "DisableCookies = 1"} {
+	for _, option := range []string{
+		"RandomTrailers = 1",
+		"DisableCookies = 1",
+	} {
 		if !strings.Contains(wire, option) {
 			t.Errorf("provider option lost: %s", option)
 		}

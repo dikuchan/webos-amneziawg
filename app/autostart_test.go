@@ -42,7 +42,10 @@ func TestAutostartCanBeEnabledAndDisabledWithoutStartingVPN(t *testing.T) {
 }
 
 func TestAutostartLeavesForeignHooksUntouched(t *testing.T) {
-	for _, kind := range []string{"file", "symlink"} {
+	for _, kind := range []string{
+		"file",
+		"symlink",
+	} {
 		t.Run(kind, func(t *testing.T) {
 			// Arrange: the destination belongs to another component.
 			root := t.TempDir()
@@ -57,7 +60,10 @@ func TestAutostartLeavesForeignHooksUntouched(t *testing.T) {
 			}
 
 			// Act / Assert: neither opt-in nor opt-out may replace foreign state.
-			for _, preference := range []bootSetting{bootEnabled, bootDisabled} {
+			for _, preference := range []bootSetting{
+				bootEnabled,
+				bootDisabled,
+			} {
 				if err := setBootHook(hook, filepath.Join(root, "our-hook"), preference); err == nil {
 					t.Fatal("foreign hook accepted")
 				}

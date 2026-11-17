@@ -214,7 +214,9 @@ func runBoot(ctx context.Context, kit string) (result error) {
 			dev := fieldAfter(route, "dev")
 			if routeErr == nil && dev != "" && dev != iface && dev != "wg0" {
 				lookup, done := context.WithTimeout(waiting, 5*time.Second)
-				ips, lookupErr := (&net.Resolver{PreferGo: true}).LookupNetIP(lookup, "ip4", cfg.Host)
+				ips, lookupErr := (&net.Resolver{
+					PreferGo: true,
+				}).LookupNetIP(lookup, "ip4", cfg.Host)
 				done()
 				if lookupErr == nil && len(ips) > 0 {
 					break

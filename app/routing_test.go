@@ -25,7 +25,19 @@ func TestRoutingListCanonicalizesPublicIPv4WithoutBroadeningIt(t *testing.T) {
 }
 
 func TestRoutingListRejectsDangerousOrUnboundedInput(t *testing.T) {
-	for _, input := range []string{"", "0.0.0.0/0", "5.0.0.0/4", "10.0.0.0/8", "127.0.0.1/32", "100.64.0.0/10", "192.168.1.0/24", "198.51.100.0/24", "::/0", "<html>error</html>", strings.Repeat("5.45.192.0/24\n", 5000)} {
+	for _, input := range []string{
+		"",
+		"0.0.0.0/0",
+		"5.0.0.0/4",
+		"10.0.0.0/8",
+		"127.0.0.1/32",
+		"100.64.0.0/10",
+		"192.168.1.0/24",
+		"198.51.100.0/24",
+		"::/0",
+		"<html>error</html>",
+		strings.Repeat("5.45.192.0/24\n", 5000),
+	} {
 		// Act / Assert: bad input never becomes a route or executable command.
 		if _, err := parseRoutingList([]byte(input)); err == nil {
 			t.Fatal("unsafe routing list accepted")
@@ -37,7 +49,22 @@ func TestFeedRequiresMatchingManifestSizeHashAndCount(t *testing.T) {
 	// Arrange: a complete published list and its manifest.
 	data := []byte("5.45.192.0/24\n77.88.0.0/18\n")
 	sum := sha256.Sum256(data)
-	manifest, err := json.Marshal(map[string]any{"schema": 1, "generatedAt": "2026-11-16T10:00:00Z", "tiers": map[string]any{"ru-standard": map[string]any{"ipv4": 2, "files": []map[string]any{{"name": "ru-standard.ipv4.txt", "size": len(data), "sha256": hex.EncodeToString(sum[:])}}}}})
+	manifest, err := json.Marshal(map[string]any{
+		"schema":      1,
+		"generatedAt": "2026-11-16T10:00:00Z",
+		"tiers": map[string]any{
+			"ru-standard": map[string]any{
+				"ipv4": 2,
+				"files": []map[string]any{
+					{
+						"name":   "ru-standard.ipv4.txt",
+						"size":   len(data),
+						"sha256": hex.EncodeToString(sum[:]),
+					},
+				},
+			},
+		},
+	})
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -56,10 +83,18 @@ func TestFeedRequiresMatchingManifestSizeHashAndCount(t *testing.T) {
 // Route ownership is an external safety contract: an unrelated matching route
 // must survive enabling/disabling split routing, regardless of implementation.
 func TestSplitRoutePlanDoesNotAdoptExistingUnownedRoutes(t *testing.T) {
-	route := managedRoute{Prefix: netip.MustParsePrefix("5.45.192.0/24"), Interface: 2, Gateway: netip.MustParseAddr("192.168.0.1")}
-	next := []managedRoute{route}
+	route := managedRoute{
+		Prefix:    netip.MustParsePrefix("5.45.192.0/24"),
+		Interface: 2,
+		Gateway:   netip.MustParseAddr("192.168.0.1"),
+	}
+	next := []managedRoute{
+		route,
+	}
 
-	_, _, err := planManagedRoutes([]managedRoute{route}, nil, next)
+	_, _, err := planManagedRoutes([]managedRoute{
+		route,
+	}, nil, next)
 
 	if err == nil {
 		t.Fatal("existing unowned route was adopted")
@@ -67,12 +102,21 @@ func TestSplitRoutePlanDoesNotAdoptExistingUnownedRoutes(t *testing.T) {
 }
 
 func TestSplitRoutePlanRemovesOnlyRecordedExactTuples(t *testing.T) {
-	owned := managedRoute{Prefix: netip.MustParsePrefix("5.45.192.0/24"), Interface: 2, Gateway: netip.MustParseAddr("192.168.0.1")}
+	owned := managedRoute{
+		Prefix:    netip.MustParsePrefix("5.45.192.0/24"),
+		Interface: 2,
+		Gateway:   netip.MustParseAddr("192.168.0.1"),
+	}
 	foreign := owned
 	foreign.Gateway = netip.MustParseAddr("192.168.0.2")
-	previous := []managedRoute{owned}
+	previous := []managedRoute{
+		owned,
+	}
 
-	add, remove, err := planManagedRoutes([]managedRoute{owned, foreign}, previous, nil)
+	add, remove, err := planManagedRoutes([]managedRoute{
+		owned,
+		foreign,
+	}, previous, nil)
 
 	if err != nil || len(add) != 0 || len(remove) != 1 || remove[0] != owned {
 		t.Fatal("plan did not preserve foreign route", err)
@@ -84,12 +128,33 @@ func TestSplitRoutePlanRemovesOnlyRecordedExactTuples(t *testing.T) {
 func TestRoutingDownloadChecksPublishedContentBeforeReturningIt(t *testing.T) {
 	data := []byte("5.45.192.0/24\n77.88.0.0/18\n")
 	sum := sha256.Sum256(data)
-	manifest, err := json.Marshal(map[string]any{"schema": 1, "generatedAt": "2026-11-16T10:00:00Z", "tiers": map[string]any{"ru-standard": map[string]any{"ipv4": 2, "files": []map[string]any{{"name": "ru-standard.ipv4.txt", "size": len(data), "sha256": hex.EncodeToString(sum[:])}}}}})
+	manifest, err := json.Marshal(map[string]any{
+		"schema":      1,
+		"generatedAt": "2026-11-16T10:00:00Z",
+		"tiers": map[string]any{
+			"ru-standard": map[string]any{
+				"ipv4": 2,
+				"files": []map[string]any{
+					{
+						"name":   "ru-standard.ipv4.txt",
+						"size":   len(data),
+						"sha256": hex.EncodeToString(sum[:]),
+					},
+				},
+			},
+		},
+	})
 	if err != nil {
 		t.Fatal(err)
 	}
-	for _, broken := range []bool{false, true} {
-		t.Run(map[bool]string{false: "complete", true: "truncated"}[broken], func(t *testing.T) {
+	for _, broken := range []bool{
+		false,
+		true,
+	} {
+		t.Run(map[bool]string{
+			false: "complete",
+			true:  "truncated",
+		}[broken], func(t *testing.T) {
 			server := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 				body := manifest
 				if r.URL.Path == "/ru-standard.ipv4.txt" {

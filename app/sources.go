@@ -101,7 +101,11 @@ func parseIPv4Text(raw []byte) ([]netip.Prefix, error) {
 	if len(raw) > sourceByteLimit || !utf8.Valid(raw) {
 		return nil, errors.New("IPv4 list exceeds 256 KiB or is not UTF-8")
 	}
-	raw = bytes.TrimPrefix(raw, []byte{0xef, 0xbb, 0xbf})
+	raw = bytes.TrimPrefix(raw, []byte{
+		0xef,
+		0xbb,
+		0xbf,
+	})
 	result := make([]netip.Prefix, 0)
 	for _, line := range strings.Split(string(raw), "\n") {
 		line = strings.TrimSpace(strings.SplitN(line, "#", 2)[0])
@@ -234,7 +238,26 @@ func defaultRoutingDocument() (routingDocument, error) {
 	if err != nil {
 		return routingDocument{}, err
 	}
-	return routingDocument{Version: 1, Mode: modeAll, Sources: []listSource{{Spec: sourceSpec{ID: "ru-direct", Kind: sourceRU, Name: "RU Direct Standard", EveryHours: 24}, Cache: sourceCache{Raw: d.Source, Hash: d.Hash, Checked: d.Generated, State: sourceReady}}}}, nil
+	return routingDocument{
+		Version: 1,
+		Mode:    modeAll,
+		Sources: []listSource{
+			{
+				Spec: sourceSpec{
+					ID:         "ru-direct",
+					Kind:       sourceRU,
+					Name:       "RU Direct Standard",
+					EveryHours: 24,
+				},
+				Cache: sourceCache{
+					Raw:     d.Source,
+					Hash:    d.Hash,
+					Checked: d.Generated,
+					State:   sourceReady,
+				},
+			},
+		},
+	}, nil
 }
 
 func decodeRoutingDocument(raw []byte) (routingDocument, error) {
@@ -273,13 +296,22 @@ func decodeRoutingDocument(raw []byte) (routingDocument, error) {
 					return d, err
 				}
 				attempted, state := s.Cache.Attempted, s.Cache.State
-				s.Cache = sourceCache{Raw: bundled.Source, Hash: bundled.Hash, Checked: bundled.Generated, Attempted: attempted, State: sourceReady}
+				s.Cache = sourceCache{
+					Raw:       bundled.Source,
+					Hash:      bundled.Hash,
+					Checked:   bundled.Generated,
+					Attempted: attempted,
+					State:     sourceReady,
+				}
 				if state == sourceFailed {
 					s.Cache.State = sourceFailed
 				}
 			} else {
 				attempted, state := s.Cache.Attempted, s.Cache.State
-				s.Cache = sourceCache{Attempted: attempted, State: sourceMissing}
+				s.Cache = sourceCache{
+					Attempted: attempted,
+					State:     sourceMissing,
+				}
 				if state == sourceFailed {
 					s.Cache.State = sourceFailed
 				}
@@ -352,7 +384,10 @@ func policyRevision(d routingDocument) string {
 	raw, err := json.Marshal(struct {
 		Mode    routingMode
 		Sources []sourceSpec
-	}{d.Mode, specs})
+	}{
+		d.Mode,
+		specs,
+	})
 	if err != nil {
 		panic("routing policy encoding failed")
 	}

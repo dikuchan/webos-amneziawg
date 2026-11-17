@@ -86,9 +86,15 @@ func compileDataRoutes(mode routingMode, prefixes []netip.Prefix, network physic
 	}
 	byPrefix := make(map[netip.Prefix]managedRoute)
 	if mode != modeInclude {
-		for _, text := range []string{"0.0.0.0/1", "128.0.0.0/1"} {
+		for _, text := range []string{
+			"0.0.0.0/1",
+			"128.0.0.0/1",
+		} {
 			p := netip.MustParsePrefix(text)
-			byPrefix[p] = managedRoute{Prefix: p, Interface: tunnelIndex}
+			byPrefix[p] = managedRoute{
+				Prefix:    p,
+				Interface: tunnelIndex,
+			}
 		}
 	}
 	if mode != modeAll {
@@ -99,7 +105,10 @@ func compileDataRoutes(mode routingMode, prefixes []netip.Prefix, network physic
 			}
 		}
 		for _, p := range filtered {
-			r := managedRoute{Prefix: p, Interface: tunnelIndex}
+			r := managedRoute{
+				Prefix:    p,
+				Interface: tunnelIndex,
+			}
 			if mode == modeExclude {
 				r.Interface = network.Index
 				r.Gateway = network.Gateway

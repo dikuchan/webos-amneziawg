@@ -72,7 +72,12 @@ type uploadHandler struct {
 }
 
 func newLANHandler(options uploadOptions, backend lanBackend, complete func(uploadPhase)) *uploadHandler {
-	return &uploadHandler{options: options, backend: backend, complete: complete, phase: uploadWaiting}
+	return &uploadHandler{
+		options:  options,
+		backend:  backend,
+		complete: complete,
+		phase:    uploadWaiting,
+	}
 }
 
 func uploadLang(value, fallback string) string {
@@ -87,38 +92,134 @@ func uploadLang(value, fallback string) string {
 
 func lanText(lang, key string) string {
 	messages := map[string][2]string{
-		"connect":    {"Connect to the TV", "Подключение к ТВ"},
-		"code":       {"Code from the TV", "Код с экрана ТВ"},
-		"open":       {"Open", "Открыть"},
-		"profile":    {"VPN profile", "Профиль VPN"},
-		"routing":    {"Routing", "Маршрутизация"},
-		"configFile": {"Configuration (.conf)", "Конфигурация (.conf)"},
-		"import":     {"Import", "Импортировать"},
-		"all":        {"All traffic through VPN", "Весь трафик через VPN"},
-		"exclude":    {"Exclude lists from VPN", "Адреса из списков — напрямую"},
-		"include":    {"Only lists through VPN", "Через VPN — только адреса из списков"},
-		"format":     {"IPv4 addresses or CIDRs, one per line. Comments start with #.", "IPv4-адрес или подсеть в каждой строке. Комментарии начинаются с #."},
-		"add":        {"Add source", "Добавить источник"},
-		"save":       {"Save", "Сохранить"},
-		"name":       {"Name", "Название"},
-		"remove":     {"Remove", "Удалить"},
-		"type":       {"Source", "Источник"},
-		"file":       {"Local TXT file", "Локальный TXT-файл"},
-		"textFile":   {"IPv4 TXT file", "TXT-файл с IPv4"},
-		"checksum":   {"SHA-256 URL (optional)", "URL контрольной суммы SHA-256 (необязательно)"},
-		"interval":   {"Update interval, hours (1–168)", "Интервал обновления, ч (1–168)"},
-		"subnets":    {"subnets", "подсетей"},
-		"cached":     {"Saved list; last update failed", "Сохранённый список; обновление не удалось"},
-		"temporary":  {"This page is available while web settings are open on the TV, for up to 10 minutes.", "Страница доступна, пока веб-настройки открыты на ТВ, максимум 10 минут."},
-		"saved":      {"Routing settings saved.", "Настройки маршрутизации сохранены."},
-		"done":       {"Configuration imported. You can connect on the TV.", "Конфигурация загружена. Можно подключаться на ТВ."},
-		"invalid":    {"Check the file and source settings. IPv4 TXT only; at most 8 sources and 16384 subnets.", "Проверь файл и параметры источников. Поддерживается IPv4 TXT, до 8 источников и 16384 подсетей."},
-		"denied":     {"Incorrect code.", "Неверный код."},
-		"expired":    {"This session has ended. Reopen web settings on the TV.", "Сеанс завершён. Открой веб-настройки на ТВ заново."},
-		"busy":       {"Disconnect the VPN before replacing its profile.", "Отключи VPN перед заменой профиля."},
-		"failed":     {"Could not save. Check source URLs, connectivity and the TV logs.", "Не удалось сохранить. Проверь адреса источников, подключение и логи на ТВ."},
-		"conflict":   {"Settings changed on the TV. Reload this page.", "Настройки изменились на ТВ. Обнови страницу."},
-		"operation":  {"Another operation is running. Try again.", "Выполняется другая операция. Повтори попытку."},
+		"connect": {
+			"Connect to the TV",
+			"Подключение к ТВ",
+		},
+		"code": {
+			"Code from the TV",
+			"Код с экрана ТВ",
+		},
+		"open": {
+			"Open",
+			"Открыть",
+		},
+		"profile": {
+			"VPN profile",
+			"Профиль VPN",
+		},
+		"routing": {
+			"Routing",
+			"Маршрутизация",
+		},
+		"configFile": {
+			"Configuration (.conf)",
+			"Конфигурация (.conf)",
+		},
+		"import": {
+			"Import",
+			"Импортировать",
+		},
+		"all": {
+			"All traffic through VPN",
+			"Весь трафик через VPN",
+		},
+		"exclude": {
+			"Exclude lists from VPN",
+			"Адреса из списков — напрямую",
+		},
+		"include": {
+			"Only lists through VPN",
+			"Через VPN — только адреса из списков",
+		},
+		"format": {
+			"IPv4 addresses or CIDRs, one per line. Comments start with #.",
+			"IPv4-адрес или подсеть в каждой строке. Комментарии начинаются с #.",
+		},
+		"add": {
+			"Add source",
+			"Добавить источник",
+		},
+		"save": {
+			"Save",
+			"Сохранить",
+		},
+		"name": {
+			"Name",
+			"Название",
+		},
+		"remove": {
+			"Remove",
+			"Удалить",
+		},
+		"type": {
+			"Source",
+			"Источник",
+		},
+		"file": {
+			"Local TXT file",
+			"Локальный TXT-файл",
+		},
+		"textFile": {
+			"IPv4 TXT file",
+			"TXT-файл с IPv4",
+		},
+		"checksum": {
+			"SHA-256 URL (optional)",
+			"URL контрольной суммы SHA-256 (необязательно)",
+		},
+		"interval": {
+			"Update interval, hours (1–168)",
+			"Интервал обновления, ч (1–168)",
+		},
+		"subnets": {
+			"subnets",
+			"подсетей",
+		},
+		"cached": {
+			"Saved list; last update failed",
+			"Сохранённый список; обновление не удалось",
+		},
+		"temporary": {
+			"This page is available while web settings are open on the TV, for up to 10 minutes.",
+			"Страница доступна, пока веб-настройки открыты на ТВ, максимум 10 минут.",
+		},
+		"saved": {
+			"Routing settings saved.",
+			"Настройки маршрутизации сохранены.",
+		},
+		"done": {
+			"Configuration imported. You can connect on the TV.",
+			"Конфигурация загружена. Можно подключаться на ТВ.",
+		},
+		"invalid": {
+			"Check the file and source settings. IPv4 TXT only; at most 8 sources and 16384 subnets.",
+			"Проверь файл и параметры источников. Поддерживается IPv4 TXT, до 8 источников и 16384 подсетей.",
+		},
+		"denied": {
+			"Incorrect code.",
+			"Неверный код.",
+		},
+		"expired": {
+			"This session has ended. Reopen web settings on the TV.",
+			"Сеанс завершён. Открой веб-настройки на ТВ заново.",
+		},
+		"busy": {
+			"Disconnect the VPN before replacing its profile.",
+			"Отключи VPN перед заменой профиля.",
+		},
+		"failed": {
+			"Could not save. Check source URLs, connectivity and the TV logs.",
+			"Не удалось сохранить. Проверь адреса источников, подключение и логи на ТВ.",
+		},
+		"conflict": {
+			"Settings changed on the TV. Reload this page.",
+			"Настройки изменились на ТВ. Обнови страницу.",
+		},
+		"operation": {
+			"Another operation is running. Try again.",
+			"Выполняется другая операция. Повтори попытку.",
+		},
 	}
 	values, ok := messages[key]
 	if !ok {
@@ -160,7 +261,21 @@ type lanView struct {
 
 func (h *uploadHandler) render(w http.ResponseWriter, lang, page string, status int, key string, d *routingDocument, revision string) {
 	t := func(key string) string { return lanText(lang, key) }
-	view := lanView{Lang: lang, Page: page, Path: "/", Authenticated: page != "login" && page != "ended", T: t, Blank: sourceRow{Index: "__index__", Spec: sourceSpec{Kind: sourceRemote, EveryHours: 24}, T: t}}
+	view := lanView{
+		Lang:          lang,
+		Page:          page,
+		Path:          "/",
+		Authenticated: page != "login" && page != "ended",
+		T:             t,
+		Blank: sourceRow{
+			Index: "__index__",
+			Spec: sourceSpec{
+				Kind:       sourceRemote,
+				EveryHours: 24,
+			},
+			T: t,
+		},
+	}
 	if page == "routing" {
 		view.Path = "/routing"
 	}
@@ -181,7 +296,13 @@ func (h *uploadHandler) render(w http.ResponseWriter, lang, page string, status 
 			if err != nil {
 				p = nil
 			}
-			row := sourceRow{Index: strconv.Itoa(i), Spec: s.Spec, State: s.Cache.State, Count: len(p), T: t}
+			row := sourceRow{
+				Index: strconv.Itoa(i),
+				Spec:  s.Spec,
+				State: s.Cache.State,
+				Count: len(p),
+				T:     t,
+			}
 			if validCache(s.Cache) {
 				row.Cached = "yes"
 			}
@@ -253,7 +374,14 @@ func (h *uploadHandler) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 			h.render(w, lang, "login", 403, "denied", nil, "")
 			return
 		}
-		http.SetCookie(w, &http.Cookie{Name: "amneziawg-lan", Value: h.options.Token, Path: "/", HttpOnly: true, SameSite: http.SameSiteStrictMode, MaxAge: 600})
+		http.SetCookie(w, &http.Cookie{
+			Name:     "amneziawg-lan",
+			Value:    h.options.Token,
+			Path:     "/",
+			HttpOnly: true,
+			SameSite: http.SameSiteStrictMode,
+			MaxAge:   600,
+		})
 		http.Redirect(w, r, "/?lang="+lang, http.StatusSeeOther)
 		return
 	}
@@ -390,7 +518,10 @@ func (h *uploadHandler) importProfile(w http.ResponseWriter, r *http.Request, la
 }
 
 func (h *uploadHandler) parseRoutingForm(r *http.Request, current routingDocument) (routingDocument, error) {
-	document := routingDocument{Version: 1, Mode: routingMode(r.FormValue("mode"))}
+	document := routingDocument{
+		Version: 1,
+		Mode:    routingMode(r.FormValue("mode")),
+	}
 	var invalid error
 	seen := make(map[sourceID]struct{})
 	presets := 0
@@ -418,7 +549,13 @@ func (h *uploadHandler) parseRoutingForm(r *http.Request, current routingDocumen
 				return document, err
 			}
 		}
-		spec := sourceSpec{ID: id, Kind: kind, Name: strings.TrimSpace(r.FormValue("name-" + suffix)), URL: strings.TrimSpace(r.FormValue("url-" + suffix)), ChecksumURL: strings.TrimSpace(r.FormValue("checksum-" + suffix))}
+		spec := sourceSpec{
+			ID:          id,
+			Kind:        kind,
+			Name:        strings.TrimSpace(r.FormValue("name-" + suffix)),
+			URL:         strings.TrimSpace(r.FormValue("url-" + suffix)),
+			ChecksumURL: strings.TrimSpace(r.FormValue("checksum-" + suffix)),
+		}
 		if kind != sourceLocal {
 			hours, err := strconv.ParseUint(r.FormValue("hours-"+suffix), 10, 16)
 			if err != nil {
@@ -426,7 +563,12 @@ func (h *uploadHandler) parseRoutingForm(r *http.Request, current routingDocumen
 			}
 			spec.EveryHours = uint16(hours)
 		}
-		source := listSource{Spec: spec, Cache: sourceCache{State: sourceMissing}}
+		source := listSource{
+			Spec: spec,
+			Cache: sourceCache{
+				State: sourceMissing,
+			},
+		}
 		for _, old := range previous {
 			if old.Spec.ID == id && old.Spec.Kind == kind && old.Spec.URL == spec.URL && old.Spec.ChecksumURL == spec.ChecksumURL {
 				source.Cache = old.Cache
@@ -440,7 +582,12 @@ func (h *uploadHandler) parseRoutingForm(r *http.Request, current routingDocumen
 				if err != nil {
 					return document, err
 				}
-				source.Cache = sourceCache{Raw: d.Source, Hash: d.Hash, Checked: d.Generated, State: sourceReady}
+				source.Cache = sourceCache{
+					Raw:     d.Source,
+					Hash:    d.Hash,
+					Checked: d.Generated,
+					State:   sourceReady,
+				}
 			}
 		}
 		if files := r.MultipartForm.File["file-"+suffix]; len(files) > 0 {
@@ -459,7 +606,12 @@ func (h *uploadHandler) parseRoutingForm(r *http.Request, current routingDocumen
 			if _, err := parseIPv4Text(raw); err != nil {
 				invalid = err
 			} else {
-				source.Cache = sourceCache{Raw: raw, Hash: contentHash(raw), Checked: h.options.Now(), State: sourceReady}
+				source.Cache = sourceCache{
+					Raw:     raw,
+					Hash:    contentHash(raw),
+					Checked: h.options.Now(),
+					State:   sourceReady,
+				}
 			}
 		}
 		if _, ok := seen[id]; ok {
@@ -578,7 +730,14 @@ func openUpload(ctx context.Context, kit, language string) error {
 	if err != nil {
 		return err
 	}
-	state := &uploadState{BootID: id, Host: net.JoinHostPort(address, fmt.Sprint(uploadPort)), Code: fmt.Sprintf("%08d", code.Int64()), Language: uploadLang(language, "en"), Expires: time.Now().Add(10 * time.Minute), Phase: uploadStarting}
+	state := &uploadState{
+		BootID:   id,
+		Host:     net.JoinHostPort(address, fmt.Sprint(uploadPort)),
+		Code:     fmt.Sprintf("%08d", code.Int64()),
+		Language: uploadLang(language, "en"),
+		Expires:  time.Now().Add(10 * time.Minute),
+		Phase:    uploadStarting,
+	}
 	if err := saveUploadState(state); err != nil {
 		return err
 	}
@@ -701,8 +860,16 @@ func serveUpload() error {
 	if _, err := rand.Read(token[:]); err != nil {
 		return err
 	}
-	handler := newLANHandler(uploadOptions{Host: state.Host, Code: state.Code, Token: hex.EncodeToString(token[:]), Language: state.Language, Expires: state.Expires, Now: time.Now}, lanBackend{
-		Load: readRoutingDocument, Save: saveEditorRouting,
+	handler := newLANHandler(uploadOptions{
+		Host:     state.Host,
+		Code:     state.Code,
+		Token:    hex.EncodeToString(token[:]),
+		Language: state.Language,
+		Expires:  state.Expires,
+		Now:      time.Now,
+	}, lanBackend{
+		Load: readRoutingDocument,
+		Save: saveEditorRouting,
 		Import: func(raw []byte, candidate candidateConfig) error {
 			return withLock(func() error {
 				if err := suppressBoot(); err != nil {
@@ -717,18 +884,28 @@ func serveUpload() error {
 		},
 	}, finish)
 	var connections atomic.Int32
-	server := &http.Server{Handler: handler, BaseContext: func(net.Listener) context.Context { return ctx }, ReadHeaderTimeout: 5 * time.Second, ReadTimeout: 15 * time.Second, WriteTimeout: 75 * time.Second, IdleTimeout: 5 * time.Second, MaxHeaderBytes: 4096, ErrorLog: log.New(io.Discard, "", 0), ConnState: func(conn net.Conn, phase http.ConnState) {
-		switch phase {
-		case http.StateNew:
-			if connections.Add(1) > 4 {
-				closeResource(conn)
+	server := &http.Server{
+		Handler:           handler,
+		BaseContext:       func(net.Listener) context.Context { return ctx },
+		ReadHeaderTimeout: 5 * time.Second,
+		ReadTimeout:       15 * time.Second,
+		WriteTimeout:      75 * time.Second,
+		IdleTimeout:       5 * time.Second,
+		MaxHeaderBytes:    4096,
+		ErrorLog:          log.New(io.Discard, "", 0),
+		ConnState: func(conn net.Conn, phase http.ConnState) {
+			switch phase {
+			case http.StateNew:
+				if connections.Add(1) > 4 {
+					closeResource(conn)
+				}
+			case http.StateActive, http.StateIdle:
+				// These transitions do not change the connection count.
+			case http.StateClosed, http.StateHijacked:
+				connections.Add(-1)
 			}
-		case http.StateActive, http.StateIdle:
-			// These transitions do not change the connection count.
-		case http.StateClosed, http.StateHijacked:
-			connections.Add(-1)
-		}
-	}}
+		},
+	}
 	go func() {
 		<-ctx.Done()
 		shutdown, done := context.WithTimeout(context.Background(), 2*time.Second)

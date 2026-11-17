@@ -45,7 +45,19 @@ type routingFeedInfo struct {
 }
 
 var reservedRoutingPrefixes = []netip.Prefix{
-	netip.MustParsePrefix("0.0.0.0/8"), netip.MustParsePrefix("10.0.0.0/8"), netip.MustParsePrefix("100.64.0.0/10"), netip.MustParsePrefix("127.0.0.0/8"), netip.MustParsePrefix("169.254.0.0/16"), netip.MustParsePrefix("172.16.0.0/12"), netip.MustParsePrefix("192.0.0.0/24"), netip.MustParsePrefix("192.0.2.0/24"), netip.MustParsePrefix("192.168.0.0/16"), netip.MustParsePrefix("198.18.0.0/15"), netip.MustParsePrefix("198.51.100.0/24"), netip.MustParsePrefix("203.0.113.0/24"), netip.MustParsePrefix("224.0.0.0/3"),
+	netip.MustParsePrefix("0.0.0.0/8"),
+	netip.MustParsePrefix("10.0.0.0/8"),
+	netip.MustParsePrefix("100.64.0.0/10"),
+	netip.MustParsePrefix("127.0.0.0/8"),
+	netip.MustParsePrefix("169.254.0.0/16"),
+	netip.MustParsePrefix("172.16.0.0/12"),
+	netip.MustParsePrefix("192.0.0.0/24"),
+	netip.MustParsePrefix("192.0.2.0/24"),
+	netip.MustParsePrefix("192.168.0.0/16"),
+	netip.MustParsePrefix("198.18.0.0/15"),
+	netip.MustParsePrefix("198.51.100.0/24"),
+	netip.MustParsePrefix("203.0.113.0/24"),
+	netip.MustParsePrefix("224.0.0.0/3"),
 }
 
 func validRoutingPrefix(prefix netip.Prefix) bool {
@@ -127,7 +139,12 @@ func decodeRoutingContent(info routingFeedInfo, raw []byte) (routingDataset, err
 	if len(prefixes) != info.Count {
 		return routingDataset{}, errors.New("routing list count does not match its manifest")
 	}
-	return routingDataset{Generated: info.Generated, Hash: info.File.Hash, Prefixes: prefixes, Source: raw}, nil
+	return routingDataset{
+		Generated: info.Generated,
+		Hash:      info.File.Hash,
+		Prefixes:  prefixes,
+		Source:    raw,
+	}, nil
 }
 
 func decodeRoutingFeed(manifest, raw []byte) (routingDataset, error) {
@@ -148,7 +165,11 @@ func decodeRoutingFeed(manifest, raw []byte) (routingDataset, error) {
 	}
 	for _, file := range tier.Files {
 		if file.Name == "ru-standard.ipv4.txt" {
-			return decodeRoutingContent(routingFeedInfo{Generated: value.Generated, Count: tier.IPv4, File: file}, raw)
+			return decodeRoutingContent(routingFeedInfo{
+				Generated: value.Generated,
+				Count:     tier.IPv4,
+				File:      file,
+			}, raw)
 		}
 	}
 	return routingDataset{}, errors.New("routing manifest has no IPv4 list")
@@ -163,7 +184,11 @@ func bundledDataset() (routingDataset, error) {
 	if err := json.Unmarshal(bundledRoutingManifest, &value); err != nil {
 		return routingDataset{}, err
 	}
-	return decodeRoutingContent(routingFeedInfo{Generated: value.Generated, Count: value.Count, File: value.File}, bundledRoutingList)
+	return decodeRoutingContent(routingFeedInfo{
+		Generated: value.Generated,
+		Count:     value.Count,
+		File:      value.File,
+	}, bundledRoutingList)
 }
 
 func decodeRoutingCache(raw []byte) (routingDataset, error) {

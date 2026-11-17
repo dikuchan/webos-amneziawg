@@ -21,7 +21,11 @@ func addOwnedRoute(ctx context.Context, s *session, args []string) error {
 	if err := saveSession(s); err != nil {
 		return err
 	}
-	_, err := command(ctx, "ip", append([]string{"-4", "route", "add"}, args...)...)
+	_, err := command(ctx, "ip", append([]string{
+		"-4",
+		"route",
+		"add",
+	}, args...)...)
 	return err
 }
 
@@ -71,7 +75,11 @@ func stop(ctx context.Context, kit string) error {
 		args := s.Routes[i]
 		// Only exact routes bearing this client's protocol, metric and next hop.
 		// A missing route is expected after its TUN interface disappears.
-		if _, err := command(ctx, "ip", append([]string{"-4", "route", "del"}, args...)...); err != nil {
+		if _, err := command(ctx, "ip", append([]string{
+			"-4",
+			"route",
+			"del",
+		}, args...)...); err != nil {
 			out, checkErr := command(ctx, "ip", "-4", "route", "show", "proto", routeProtocol)
 			if checkErr != nil || strings.Contains(out, args[0]+" ") {
 				failures = append(failures, errors.New("cannot remove an owned route"))
@@ -177,7 +185,9 @@ func start(ctx context.Context, kit string) (result error) {
 		return errors.New("/dev/net/tun is unavailable")
 	}
 	resolveCtx, cancel := context.WithTimeout(ctx, 5*time.Second)
-	ips, err := (&net.Resolver{PreferGo: true}).LookupNetIP(resolveCtx, "ip4", c.Host)
+	ips, err := (&net.Resolver{
+		PreferGo: true,
+	}).LookupNetIP(resolveCtx, "ip4", c.Host)
 	cancel()
 	if err != nil || len(ips) == 0 || !ips[0].IsGlobalUnicast() {
 		return errors.New("cannot resolve the Endpoint to a unicast IPv4 address using the original DNS")
@@ -199,7 +209,10 @@ func start(ctx context.Context, kit string) (result error) {
 	if physical == "" || physical == "wg0" || physical == iface {
 		return errors.New("cannot identify the original default interface")
 	}
-	s := &session{BootID: id, Binary: filepath.Join(kit, "bin", "amneziawg-go")}
+	s := &session{
+		BootID: id,
+		Binary: filepath.Join(kit, "bin", "amneziawg-go"),
+	}
 	if err := saveSession(s); err != nil {
 		return err
 	}
@@ -213,7 +226,9 @@ func start(ctx context.Context, kit string) (result error) {
 			}
 		}
 	}()
-	args := []string{endpoint.String() + "/32"}
+	args := []string{
+		endpoint.String() + "/32",
+	}
 	if via != "" {
 		args = append(args, "via", via)
 	}
@@ -229,7 +244,9 @@ func start(ctx context.Context, kit string) (result error) {
 	child := exec.CommandContext(context.Background(), s.Binary, "-f", iface)
 	child.Stdin, child.Stdout, child.Stderr = null, null, null
 	child.Env = append(os.Environ(), "LOG_LEVEL=error")
-	child.SysProcAttr = &syscall.SysProcAttr{Setsid: true}
+	child.SysProcAttr = &syscall.SysProcAttr{
+		Setsid: true,
+	}
 	err = child.Start()
 	if closeErr := null.Close(); err == nil {
 		err = closeErr
@@ -295,7 +312,10 @@ func start(ctx context.Context, kit string) (result error) {
 		if previous != "0" && previous != "1" {
 			return errors.New("unexpected physical-interface IPv6 state")
 		}
-		s.IPv6 = &ipv6Recovery{Device: physical, Previous: previous}
+		s.IPv6 = &ipv6Recovery{
+			Device:   physical,
+			Previous: previous,
+		}
 		if err := saveSession(s); err != nil {
 			return err
 		}
@@ -316,7 +336,11 @@ func start(ctx context.Context, kit string) (result error) {
 		if _, exists := pinnedDNS[address]; exists {
 			continue
 		}
-		if err := addOwnedRoute(ctx, s, []string{address.String() + "/32", "dev", iface}); err != nil {
+		if err := addOwnedRoute(ctx, s, []string{
+			address.String() + "/32",
+			"dev",
+			iface,
+		}); err != nil {
 			return err
 		}
 		pinnedDNS[address] = struct{}{}
@@ -333,14 +357,46 @@ func start(ctx context.Context, kit string) (result error) {
 	if err != nil || fieldAfter(probePath, "dev") != iface {
 		return errors.New("probe/DNS address is not routed through the AWG tunnel")
 	}
-	dialer := net.Dialer{Timeout: time.Second}
+	dialer := net.Dialer{
+		Timeout: time.Second,
+	}
 	conn, err := dialer.DialContext(ctx, "udp4", net.JoinHostPort(probe.String(), "53"))
 	if err != nil {
 		return errors.New("cannot trigger an AWG handshake")
 	}
 	err = conn.SetWriteDeadline(time.Now().Add(time.Second))
 	if err == nil {
-		_, err = conn.Write([]byte{0x41, 0x57, 1, 0, 0, 1, 0, 0, 0, 0, 0, 0, 7, 'e', 'x', 'a', 'm', 'p', 'l', 'e', 3, 'c', 'o', 'm', 0, 0, 1, 0, 1})
+		_, err = conn.Write([]byte{
+			0x41,
+			0x57,
+			1,
+			0,
+			0,
+			1,
+			0,
+			0,
+			0,
+			0,
+			0,
+			0,
+			7,
+			'e',
+			'x',
+			'a',
+			'm',
+			'p',
+			'l',
+			'e',
+			3,
+			'c',
+			'o',
+			'm',
+			0,
+			0,
+			1,
+			0,
+			1,
+		})
 	}
 	closeErr := conn.Close()
 	if err != nil {

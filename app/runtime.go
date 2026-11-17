@@ -87,7 +87,11 @@ func prepareRuntime() error {
 	if err := os.Unsetenv("LD_PRELOAD"); err != nil {
 		return err
 	}
-	for _, path := range []string{base, base + "/conf", base + "/run"} {
+	for _, path := range []string{
+		base,
+		base + "/conf",
+		base + "/run",
+	} {
 		if err := secureDir(path); err != nil {
 			return err
 		}

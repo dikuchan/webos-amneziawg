@@ -59,7 +59,10 @@ func migrateLegacyFiles(m migrationLayout) error {
 	if strings.TrimSpace(string(dnsBoot)) == m.BootID {
 		return errLegacyActive
 	}
-	for _, name := range []string{"upload-serve", "route-updater"} {
+	for _, name := range []string{
+		"upload-serve",
+		"route-updater",
+	} {
 		raw, err := readRegular(m.Legacy+"/run/"+name+".json", 4096)
 		if err != nil {
 			return err
@@ -131,7 +134,12 @@ func migrateLegacyFiles(m migrationLayout) error {
 		if len(cache) > 0 {
 			// A damaged optional list falls back to the bundled snapshot.
 			if d, err := decodeRoutingCache(cache); err == nil {
-				document.Sources[0].Cache = sourceCache{Raw: d.Source, Hash: d.Hash, Checked: d.Checked, State: sourceReady}
+				document.Sources[0].Cache = sourceCache{
+					Raw:     d.Source,
+					Hash:    d.Hash,
+					Checked: d.Checked,
+					State:   sourceReady,
+				}
 			}
 		}
 		encoded, err := json.Marshal(document)
@@ -237,5 +245,13 @@ func migrateInstallation() error {
 			return errors.New("ordinary WireGuard autostart is enabled; disable it before migration")
 		}
 	}
-	return migrateLegacyFiles(migrationLayout{Legacy: legacyBase, Current: base, OldHook: "/var/lib/webosbrew/init.d/75-amneziawg-test", NewHook: bootHook, OldScript: oldScript, NewScript: filepath.Join(kit, "scripts", "boot.sh"), BootID: id})
+	return migrateLegacyFiles(migrationLayout{
+		Legacy:    legacyBase,
+		Current:   base,
+		OldHook:   "/var/lib/webosbrew/init.d/75-amneziawg-test",
+		NewHook:   bootHook,
+		OldScript: oldScript,
+		NewScript: filepath.Join(kit, "scripts", "boot.sh"),
+		BootID:    id,
+	})
 }

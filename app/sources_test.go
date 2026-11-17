@@ -17,7 +17,14 @@ func TestIPv4TextAcceptsHostsCommentsAndNormalizesNetworks(t *testing.T) {
 }
 
 func TestIPv4TextRejectsMalformedIPv6EmptyAndOversizedLists(t *testing.T) {
-	for _, raw := range [][]byte{[]byte(""), []byte("# empty"), []byte("example.org"), []byte("::/0"), []byte("1.2.3.999"), make([]byte, sourceByteLimit+1)} {
+	for _, raw := range [][]byte{
+		[]byte(""),
+		[]byte("# empty"),
+		[]byte("example.org"),
+		[]byte("::/0"),
+		[]byte("1.2.3.999"),
+		make([]byte, sourceByteLimit+1),
+	} {
 		if _, err := parseIPv4Text(raw); err == nil {
 			t.Fatal("invalid list accepted")
 		}
@@ -25,8 +32,17 @@ func TestIPv4TextRejectsMalformedIPv6EmptyAndOversizedLists(t *testing.T) {
 }
 
 func TestIncludeAndExcludeProtectLANAndUseOppositePaths(t *testing.T) {
-	network := physicalNetwork{Index: 2, Gateway: netip.MustParseAddr("192.168.0.1"), LAN: []netip.Prefix{netip.MustParsePrefix("192.168.0.0/24")}}
-	prefixes := []netip.Prefix{netip.MustParsePrefix("5.45.192.0/18"), netip.MustParsePrefix("192.168.0.64/32")}
+	network := physicalNetwork{
+		Index:   2,
+		Gateway: netip.MustParseAddr("192.168.0.1"),
+		LAN: []netip.Prefix{
+			netip.MustParsePrefix("192.168.0.0/24"),
+		},
+	}
+	prefixes := []netip.Prefix{
+		netip.MustParsePrefix("5.45.192.0/18"),
+		netip.MustParsePrefix("192.168.0.64/32"),
+	}
 
 	include, err := compileDataRoutes(modeInclude, prefixes, network, 7)
 	if err != nil {
@@ -64,7 +80,23 @@ func TestPerSourceIntervalsHaveIndependentDueTimes(t *testing.T) {
 		hours uint16
 		age   time.Duration
 		want  bool
-	}{{6, 7 * time.Hour, true}, {24, 7 * time.Hour, false}, {24, 25 * time.Hour, true}} {
+	}{
+		{
+			6,
+			7 * time.Hour,
+			true,
+		},
+		{
+			24,
+			7 * time.Hour,
+			false,
+		},
+		{
+			24,
+			25 * time.Hour,
+			true,
+		},
+	} {
 		if sourceIsDue(item.hours, now.Add(-item.age), sourceReady, now) != item.want {
 			t.Fatal("incorrect update interval")
 		}

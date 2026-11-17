@@ -19,9 +19,17 @@ func TestLANBrowserServer(t *testing.T) {
 	var mu sync.Mutex
 	var handler *uploadHandler
 	reset := func() {
-		document := routingDocument{Version: 1, Mode: modeAll}
+		document := routingDocument{
+			Version: 1,
+			Mode:    modeAll,
+		}
 		handler = newLANHandler(uploadOptions{
-			Host: address, Code: "12345678", Token: "aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa", Language: "en", Expires: time.Now().Add(10 * time.Minute), Now: time.Now,
+			Host:     address,
+			Code:     "12345678",
+			Token:    "aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa",
+			Language: "en",
+			Expires:  time.Now().Add(10 * time.Minute),
+			Now:      time.Now,
 		}, lanBackend{
 			Load: func() (routingDocument, error) { return document, nil },
 			Save: func(_ context.Context, revision string, next routingDocument) error {
@@ -41,14 +49,20 @@ func TestLANBrowserServer(t *testing.T) {
 	if err != nil {
 		t.Fatal(err)
 	}
-	server := &http.Server{ReadHeaderTimeout: time.Second, ReadTimeout: 5 * time.Second, WriteTimeout: 5 * time.Second, IdleTimeout: time.Second, Handler: http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
-		mu.Lock()
-		defer mu.Unlock()
-		if r.Method == http.MethodGet && r.URL.Query().Get("reset") == "1" {
-			reset()
-		}
-		handler.ServeHTTP(w, r)
-	})}
+	server := &http.Server{
+		ReadHeaderTimeout: time.Second,
+		ReadTimeout:       5 * time.Second,
+		WriteTimeout:      5 * time.Second,
+		IdleTimeout:       time.Second,
+		Handler: http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+			mu.Lock()
+			defer mu.Unlock()
+			if r.Method == http.MethodGet && r.URL.Query().Get("reset") == "1" {
+				reset()
+			}
+			handler.ServeHTTP(w, r)
+		}),
+	}
 	go func() {
 		<-ctx.Done()
 		shutdown, done := context.WithTimeout(context.Background(), time.Second)
