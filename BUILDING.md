@@ -1,83 +1,82 @@
 # Building
 
-Requirements: Go 1.26.3, Bun 1.4.4, Node.js for the webOS packager, and Docker for the C binaries and network stand. No build tools are installed on the TV.
+Prebuilt packages are distributed through [Releases](https://github.com/dikuchan/webos-amneziawg/releases). Follow this guide to develop the app or build a release from source.
 
-## Checkout and setup
+## Prerequisites
+
+- Go **1.26.3**, Bun **1.4.4**, Node.js, Git and Make.
+- Docker with support for running **Linux ARM64** containers, natively or through emulation.
+- For browser tests, Playwright's Chromium and WebKit builds.
+
+Node.js runs the webOS packager. Bun and tool versions are pinned in `package.json`, `bun.lock`, the Makefile and CI configuration. Build tools are only needed on the development computer.
+
+## Setup
 
 ```sh
 git clone --recurse-submodules https://github.com/dikuchan/webos-amneziawg.git
 cd webos-amneziawg
 make setup
+export PATH="$PWD/.build/tools:$PATH"
 ```
 
-For an existing checkout, run `git submodule update --init --recursive` first. `make setup` installs the pinned Go/shell tools into `.build/tools`, frontend packages from `bun.lock`, and builds the embedded LAN script. ShellCheck archives are verified against their release SHA-256. Dependency lifecycle scripts are disabled.
+For an existing checkout, initialize dependencies with `git submodule update --init --recursive`. `make setup` installs frontend dependencies and local Go/shell tools, then builds the frontend. Dependencies stay at the commits recorded by Git.
 
-Bun 1.4.4 supports the scoped `fstream` → `mkdirp` override used here. That old packager dependency needs mkdirp's callback API, while the webOS CLI itself needs mkdirp 3. The override keeps both versions without patching upstream sources.
+A complete release source archive already includes the dependencies; extract it and run `make setup` without the submodule step.
 
-## Layout
-
-- The controller is one Go package in the repository root; its unit tests are beside the source files.
-- `web/` contains the TV UI, LAN editor, CSS, assets and frontend unit tests. `state.ts`, `protocol.ts` and `i18n.ts` have no browser I/O; `bridge.ts` owns the webOS API boundary.
-- `tests/` contains browser tests and the isolated Linux network fixtures.
-- `packaging/` contains app metadata and the TV boot/DNS scripts. `VERSION` is the application version; packaging and Go build metadata are generated from it.
-- `scripts/` contains build and packaging commands; `.build/` contains all intermediate output; `dist/` contains release artifacts. Neither output directory is committed.
-- `dependencies/` contains unmodified upstream submodules. Git records each dependency's exact commit. Build-generated version files are written to a copy under `.build/src`.
-
-| Component | Version | Commit |
-| --- | --- | --- |
-| amneziawg-go | v3.1.20261116 | `08fe3d33bbb116be09a6183d02609311b8b0c9e8` |
-| amneziawg-tools | v3.1.20260812 | `ee0f0a9aa34ff0a0da4b3433b9512781cfe02843` |
-| musl | 1.2.6 | `9fa28ece75d8a2191de7c5bb53bed224c5947417` |
-
-Keep application code and source dependencies in separate formatting scopes. Update a submodule explicitly and review its changed commit; builds do not update dependencies.
-
-## Checks
-
-```sh
-make fmt
-make check
-bun x playwright install chromium webkit
-make test-web
-```
-
-`make fmt` runs gofumpt/goimports, shfmt and Prettier, including Go HTML templates. It preserves Markdown wrapping and upstream assets. `make check` checks formatting, golangci-lint, ShellCheck, strict TypeScript/ESLint, Go tests with the race detector, and Bun unit tests. Warnings fail checks. Go commands target the application and `tests/` explicitly, excluding upstream examples and `node_modules`.
-
-`make test-web` uses Chromium at 1920×1080 and 1280×720, plus mobile WebKit for the LAN editor. The TV tests replace only the external webOS bridge. The LAN tests use the actual Go handler and templates with an in-memory backend; they never change networking or import a real provider profile. Both fixture servers bind to localhost and are bounded. Screenshots and failure traces are stored under `.build/test-results`.
-
-The unit suite protects profile validation, exact route ownership, independent source intervals, integrity checks, migration and recovery. Frontend tests protect status decoding, locale precedence, transfer units, remote focus/Back, startup status, web settings and LAN form submission. There is no coverage target or per-function test requirement.
-
-Go analysis checks both the host platform and the TV's Linux/ARMv7 target, including the Linux-only netlink implementation.
-
-## Build and package
+## Build packages
 
 ```sh
 make package
 ```
 
-`make build` writes ARMv7 controller/daemon/awg binaries into `.build/armv7/bin` and ARM64 stand binaries into `.build/arm64/bin`. The TV `awg` is statically linked with musl; the ARM64 stand utility uses the builder's libc. C builds enable `-Wall -Wextra -Werror` and fatal linker warnings. Docker containers have no host mounts or TV access and are removed after building. Build logs are in `.build/`.
+This builds the current sources and writes:
 
-`make package` builds current sources and assembles the application under `.build/app/com.github.dikuchan.amneziawg`. It copies licenses from pinned dependencies and bundled assets automatically, then produces:
+| File | Contents |
+| --- | --- |
+| `dist/webos-amneziawg_0.1.0_all.ipk` | TV app with ARMv7 native binaries |
+| `dist/webos-amneziawg-0.1.0-armv7.tar.gz` | SSH-only installation: binaries, scripts and licenses |
+| `dist/SHA256SUMS` | SHA-256 checksums |
 
-- `dist/webos-amneziawg_0.4.0_all.ipk`
-- `dist/webos-amneziawg-0.4.0-armv7.tar.gz`
-- `dist/SHA256SUMS`
+`VERSION` is the single application version. It supplies the controller's version, generated app metadata and artifact filenames. `packaging/appinfo.json` is a template.
 
-The C builder requires Docker support for `linux/arm64`. The packager takes the application version from `VERSION`; `packaging/appinfo.json` is a template. To check UI extracted from an IPK, set `AWG_PREVIEW_DIR` to its application directory and run `make test-web`.
+Intermediate files go into `.build/`; build and package output is ignored by Git. C compiler output is saved in `.build/builder.log` and `.build/awg-build.log`.
 
-The application ID remains `com.github.dikuchan.amneziawg`; runtime state and migration behavior are unchanged. The static fonts and original Amnezia artwork are source assets and must not be regenerated.
+## Target architecture
 
-From a clean committed checkout, `make source` also creates a complete source archive with every pinned dependency. `make release` runs checks, browser tests, packaging and source export. Distribute that archive alongside the binaries; a regular GitHub source archive does not include submodules. Source archives can build binaries directly without a Git checkout; exporting a new release archive requires Git.
+Release packages use Linux ARMv7 with VFPv3-D16. Both Go binaries have `CGO_ENABLED=0`; `awg` is statically linked with musl. They do not depend on the TV's glibc version. C builds enable `-Wall -Wextra -Werror` and fatal linker warnings.
 
-## Linux network stand
+One ARMv7 release target is the baseline for webOS TVs, including compatible devices with a 64-bit kernel. A kernel reporting `aarch64` does not by itself require an ARM64 application: webOS homebrew still uses a [32-bit ARM toolchain](https://github.com/webosbrew/native-toolchain), and the [64-bit bridge project](https://github.com/webosbrew/webos-bridge-64to32) documents the existing 32-bit userspace. Hardware and firmware compatibility still need testing on each model.
+
+No firmware or CPU-model build matrix is used for this release. The scripts also build ARM64 binaries for the isolated Linux integration stand; these are not packaged as a second TV release. The Docker builder's architecture is a build-host requirement, separate from the TV target.
+
+## Checks
 
 ```sh
+make check
+bun x playwright install --with-deps chromium webkit
+make test-web
 make test-integration
 ```
 
-This builds the binaries and uses disposable ARM64 Linux containers on an internal Docker bridge `172.31.222.0/24`, with synthetic credentials. Only `NET_ADMIN` and `/dev/net/tun` are required. The script cleans up its own containers, network and temporary files. `AWG_BUILDER_IMAGE` and `AWG_TEST_IMAGE` can select local images.
+| Command | Checks |
+| --- | --- |
+| `make fmt` | Format application sources |
+| `make check` | Formatting, Go lint on host and ARMv7, ShellCheck, strict TypeScript/ESLint, Go race tests and frontend unit tests |
+| `make test-web` | TV navigation and state at 1080p/720p in Chromium; LAN editor in mobile WebKit |
+| `make test-integration` | Real AWG peers, routing updates, ownership and recovery in disposable Linux containers |
 
-The stand exercises real encrypted packets, authenticated LAN editing, multiple HTTPS/local TXT sources, include/exclude switching, checksum and conditional HTTP validation, temporary download routes, cached startup, updater cancellation, LAN protection including `/0`, route collisions and idempotent Stop. A private test CA is validated normally; no TLS verification is disabled.
+The integration stand uses an internal Docker network and synthetic credentials. Containers need `NET_ADMIN` and `/dev/net/tun`; no TV access or real VPN profile is used. `AWG_BUILDER_IMAGE` and `AWG_TEST_IMAGE` override local image names.
 
-The older scripts can run separately on a prepared disposable client: `tests/network.sh` checks handshake, MTU and ordinary WG guards; `tests/failed-handshake.sh` checks rollback after the peer stops; `tests/autostart.sh` checks successful, failed and cancelled boot connections. Copy `packaging/{boot,dns}.sh` into the client's `/tmp/amneziawg-kit/scripts` and its native binaries into `/tmp/amneziawg-kit/bin`. `tests/lifecycle.sh` additionally needs a disposable environment that permits DNS bind mounts.
+To test an extracted IPK's UI, point `AWG_PREVIEW_DIR` at its application directory before running `make test-web`. Browser output and failure traces are under `.build/test-results`. Device tests are still needed for webOS permissions, trust roots, cold boot and DNS restoration.
 
-TV verification is still needed for HBC permissions, firmware compatibility, trust roots, resolver recovery, cold boot and native video applications. Local browser checks cannot reproduce the older webOS engine.
+## Release
+
+Set `VERSION`, update documentation and commit the changes. From a clean committed checkout:
+
+```sh
+make release
+```
+
+This runs checks and browser tests, builds the packages and creates `dist/webos-amneziawg-0.1.0-source.tar.gz`, containing the repository and all pinned dependency sources. `make source` creates only the source archive; it requires Git and a clean checkout.
+
+Upload the IPK, ARMv7 archive, complete source archive and `SHA256SUMS` to a GitHub release tagged `v0.1.0`. Include the complete source archive with binary releases: GitHub's automatically generated source archives omit submodules. Verify downloads with `sha256sum -c SHA256SUMS` or `shasum -a 256 -c SHA256SUMS`.
