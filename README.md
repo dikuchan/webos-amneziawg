@@ -4,6 +4,8 @@ AmneziaWG VPN client for rooted LG webOS TVs. Includes a remote-friendly interfa
 
 The VPN runs in the background when the app is closed. IPv4 routing lists let you send selected destinations through the VPN or connect to them directly.
 
+![AmneziaWG main screen](docs/main-screen.png)
+
 ## Requirements
 
 - A rooted LG webOS TV with Homebrew Channel's root service enabled.
