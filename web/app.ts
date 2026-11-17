@@ -99,6 +99,7 @@ const configButton = requiredElement("open-config", HTMLButtonElement);
 const logsButton = requiredElement("open-logs", HTMLButtonElement);
 const settingsButton = requiredElement("open-settings", HTMLButtonElement);
 const languageButton = requiredElement("language", HTMLButtonElement);
+const languageFlag = requiredElement("language-flag", HTMLImageElement);
 let tunnel: Tunnel = { kind: "unknown" };
 let autostart: AutoPreference = "unknown";
 let routing: Routing | null = null;
@@ -109,11 +110,16 @@ let queued: { action: Action; invocation: Invocation } | null = null;
 let currentView: AppView = "home";
 let configReturn: "home" | "routing" = "home";
 let routingMessage: MessageKey | null = null;
-let notice: Notice = null;
+let notice: Notice =
+  savedLanguage.kind === "unavailable"
+    ? {
+        kind: "error",
+        message: "languageSaveFailed",
+      }
+    : null;
 let lastError: CommandFailure | null = null;
 let logText: string | null = null;
-let settingsMessage: MessageKey | null =
-  savedLanguage.kind === "unavailable" ? "languageSaveFailed" : null;
+let settingsMessage: MessageKey | null = null;
 
 function renderLogs(): void {
   if (currentView !== "logs") return;
@@ -150,6 +156,8 @@ function render(): void {
     );
   const languageName = language === "ru" ? "Русский" : "English";
   requiredElement("language-value", HTMLSpanElement).textContent = languageName;
+  const flag = "assets/flags/" + (language === "ru" ? "ru" : "gb") + ".svg";
+  if (languageFlag.getAttribute("src") !== flag) languageFlag.src = flag;
   languageButton.setAttribute(
     "aria-label",
     text("language") + ": " + languageName,
@@ -325,7 +333,7 @@ function openScreen(next: AppView): void {
       target =
         autostartButton.getAttribute("aria-disabled") !== "true"
           ? autostartButton
-          : languageButton;
+          : requiredElement("settings-back", HTMLButtonElement);
       break;
   }
   target.focus();
@@ -522,9 +530,12 @@ languageButton.addEventListener("click", () => {
   languagePreference = language;
   try {
     localStorage.setItem(languageStorageKey, language);
-    settingsMessage = null;
+    if (notice?.message === "languageSaveFailed") notice = null;
   } catch {
-    settingsMessage = "languageSaveFailed";
+    notice = {
+      kind: "error",
+      message: "languageSaveFailed",
+    };
   }
   render();
 });
@@ -584,26 +595,36 @@ document.addEventListener("keydown", (event: KeyboardEvent) => {
       ];
     if (next) next.focus();
   } else if (currentView === "home") {
-    if (code === 38 && primary.getAttribute("aria-disabled") !== "true")
-      primary.focus();
-    else if (code === 40 && document.activeElement === primary)
-      configButton.focus();
-    else if (
-      (code === 37 || code === 39) &&
-      document.activeElement !== primary
-    ) {
+    if (code === 38) {
+      if (
+        document.activeElement === primary ||
+        document.activeElement === languageButton ||
+        primary.getAttribute("aria-disabled") === "true"
+      )
+        languageButton.focus();
+      else primary.focus();
+    } else if (code === 40) {
+      if (document.activeElement === languageButton)
+        (primary.getAttribute("aria-disabled") !== "true"
+          ? primary
+          : configButton
+        ).focus();
+      else if (document.activeElement === primary) configButton.focus();
+    } else if (code === 37 || code === 39) {
       const tools = [configButton, logsButton, settingsButton];
       const index = tools.findIndex(
         (button) => button === document.activeElement,
       );
-      const next =
-        tools[
-          Math.max(
-            0,
-            Math.min(tools.length - 1, index + (code === 37 ? -1 : 1)),
-          )
-        ];
-      if (next) next.focus();
+      if (index >= 0) {
+        const next =
+          tools[
+            Math.max(
+              0,
+              Math.min(tools.length - 1, index + (code === 37 ? -1 : 1)),
+            )
+          ];
+        if (next) next.focus();
+      }
     }
   } else if (
     (currentView === "settings" || currentView === "routing") &&

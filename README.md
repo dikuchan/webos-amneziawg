@@ -16,12 +16,12 @@ Verified on an LG 55UN81006LB running webOS 5.6.2. Other models and firmware ver
 
 ## Install
 
-Download `webos-amneziawg_0.1.0_all.ipk` from [Releases](https://github.com/dikuchan/webos-amneziawg/releases). You do not need Go, Bun or Docker to use the app.
+Download `webos-amneziawg_0.1.1_all.ipk` from [Releases](https://github.com/dikuchan/webos-amneziawg/releases). You do not need Go, Bun or Docker to use the app.
 
 Replace `TV_IP` with your TV's LAN address. From your computer, in the directory containing the downloaded package:
 
 ```sh
-scp -O webos-amneziawg_0.1.0_all.ipk root@TV_IP:/tmp/amneziawg.ipk
+scp -O webos-amneziawg_0.1.1_all.ipk root@TV_IP:/tmp/amneziawg.ipk
 ssh root@TV_IP
 ```
 
@@ -45,6 +45,8 @@ For updates, disconnect the VPN and close the app before installing the new IPK.
 Disconnect before replacing a VPN profile. Web settings use HTTP on the local network and close when you leave the TV panel or after ten minutes.
 
 Enable **Settings → Connect on device startup** for automatic connection. Disable autoconnect in any other VPN client first; an active ordinary WireGuard connection must also be stopped before connecting.
+
+Use the language button in the top-right corner of the home screen to switch between English and Russian. The app follows the TV language until you make a selection, and uses English for other locales.
 
 ## Routing
 
@@ -90,7 +92,7 @@ If network recovery is required, keep the state directory and run `stop` again. 
 
 There is no kill switch or continuous reconnection supervisor. Connected status checks the daemon and whether a handshake has occurred; it does not guarantee current Internet reachability.
 
-The `webos-amneziawg-0.1.0-armv7.tar.gz` release archive is an alternative for SSH-only use. Upload it to the TV, extract it into `/var/lib/webosbrew/amneziawg`, and use `bin/amneziawgctl` there. Import a profile with `"$AWG" import /path/to/profile.conf` after setting `AWG` to that binary. Choose either this installation or the IPK.
+The `webos-amneziawg-0.1.1-armv7.tar.gz` release archive is an alternative for SSH-only use. Upload it to the TV, extract it into `/var/lib/webosbrew/amneziawg`, and use `bin/amneziawgctl` there. Import a profile with `"$AWG" import /path/to/profile.conf` after setting `AWG` to that binary. Choose either this installation or the IPK.
 
 ## Development and licenses
 

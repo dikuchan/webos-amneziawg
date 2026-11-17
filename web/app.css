@@ -91,14 +91,33 @@ main {
 header {
   display: flex;
   align-items: center;
+  justify-content: space-between;
   font-size: 30px;
   font-weight: 500;
   letter-spacing: -0.6px;
 }
-header img {
+.brand {
+  display: flex;
+  align-items: center;
+}
+.brand img {
   width: 62px;
   height: 62px;
   margin-right: 18px;
+}
+.language-button {
+  min-width: 206px;
+  min-height: 62px;
+  padding: 12px 20px;
+  border-radius: 18px;
+  font-size: 26px;
+  font-weight: 500;
+}
+.language-button img {
+  display: block;
+  width: 34px;
+  height: 34px;
+  margin-right: 14px;
 }
 .connection {
   flex: 1;
@@ -436,9 +455,21 @@ h2 {
   header {
     font-size: 25px;
   }
-  header img {
+  .brand img {
     width: 48px;
     height: 48px;
+  }
+  .language-button {
+    min-width: 184px;
+    min-height: 52px;
+    padding: 10px 16px;
+    border-radius: 16px;
+    font-size: 22px;
+  }
+  .language-button img {
+    width: 28px;
+    height: 28px;
+    margin-right: 12px;
   }
   .connection {
     padding-top: 0;

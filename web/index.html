@@ -9,7 +9,22 @@
   <body>
     <main id="home">
       <header>
-        <img src="assets/largeIcon.png" alt="" /><span>AmneziaWG</span>
+        <div class="brand">
+          <img src="assets/largeIcon.png" alt="" /><span>AmneziaWG</span>
+        </div>
+        <button
+          id="language"
+          class="language-button"
+          aria-label="Language: English"
+        >
+          <img
+            id="language-flag"
+            src="assets/flags/gb.svg"
+            alt=""
+            aria-hidden="true"
+          />
+          <span id="language-value">English</span>
+        </button>
       </header>
       <section class="connection" aria-label="VPN">
         <button id="primary" aria-label="Check VPN status">
@@ -363,10 +378,6 @@
         <button id="routing" class="setting-row">
           <span data-i18n="routingMenu">Routing</span
           ><span id="routing-value" class="language-value"></span>
-        </button>
-        <button id="language" class="setting-row">
-          <span data-i18n="language">Language</span
-          ><span id="language-value" class="language-value">English</span>
         </button>
         <p id="settings-notice" role="status"></p>
         <div class="panel-actions">

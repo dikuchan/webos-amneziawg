@@ -17,6 +17,12 @@ Pinned commit: `333574bdecb43e7cb4a4bb1cd21d1367cfbbee2c`.
 Source: https://github.com/lucide-icons/lucide/tree/333574bdecb43e7cb4a4bb1cd21d1367cfbbee2c/icons
 License: `web/assets/icons/LICENSE`. SVGs are embedded inline to inherit the interface color.
 
+## Flag emoji
+
+The United Kingdom and Russia flag emoji are unmodified SVG assets from [Twemoji](https://github.com/jdecked/twemoji), pinned to commit `b6b55fef1e8636b540a6d016a4729ca8cdf2e60b`.
+Source files: `assets/svg/1f1ec-1f1e7.svg` and `assets/svg/1f1f7-1f1fa.svg`; bundled as `web/assets/flags/gb.svg` and `web/assets/flags/ru.svg`.
+Graphics license: [CC BY 4.0](https://creativecommons.org/licenses/by/4.0/), included as `web/assets/flags/LICENSE-GRAPHICS`.
+
 ## Palette
 
 Mauve Dark + Iris Dark from Radix Colors: https://www.radix-ui.com/colors

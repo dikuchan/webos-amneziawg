@@ -33,8 +33,8 @@ This builds the current sources and writes:
 
 | File | Contents |
 | --- | --- |
-| `dist/webos-amneziawg_0.1.0_all.ipk` | TV app with ARMv7 native binaries |
-| `dist/webos-amneziawg-0.1.0-armv7.tar.gz` | SSH-only installation: binaries, scripts and licenses |
+| `dist/webos-amneziawg_0.1.1_all.ipk` | TV app with ARMv7 native binaries |
+| `dist/webos-amneziawg-0.1.1-armv7.tar.gz` | SSH-only installation: binaries, scripts and licenses |
 | `dist/SHA256SUMS` | SHA-256 checksums |
 
 `VERSION` is the single application version. It supplies the controller's version, generated app metadata and artifact filenames. `packaging/appinfo.json` is a template.
@@ -86,6 +86,6 @@ Set `VERSION`, update documentation and commit the changes. From a clean committ
 make release
 ```
 
-This runs checks and browser tests, builds the packages and creates `dist/webos-amneziawg-0.1.0-source.tar.gz`, containing the repository and all pinned dependency sources. `make source` creates only the source archive; it requires Git and a clean checkout.
+This runs checks and browser tests, builds the packages and creates `dist/webos-amneziawg-0.1.1-source.tar.gz`, containing the repository and all pinned dependency sources. `make source` creates only the source archive; it requires Git and a clean checkout.
 
-Upload the IPK, ARMv7 archive, complete source archive and `SHA256SUMS` to a GitHub release tagged `v0.1.0`. Include the complete source archive with binary releases: GitHub's automatically generated source archives omit submodules. Verify downloads with `sha256sum -c SHA256SUMS` or `shasum -a 256 -c SHA256SUMS`.
+Upload the IPK, ARMv7 archive, complete source archive and `SHA256SUMS` to a GitHub release tagged `v0.1.1`. Include the complete source archive with binary releases: GitHub's automatically generated source archives omit submodules. Verify downloads with `sha256sum -c SHA256SUMS` or `shasum -a 256 -c SHA256SUMS`.
